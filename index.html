@@ -17,6 +17,37 @@
         .carousel-item:hover canvas { border-color: rgba(255,255,255,0.5); transform: translateY(-5px); }
         .carousel-item.active canvas { border-color: #fff; transform: scale(1.1); box-shadow: 0 0 20px rgba(255,255,255,0.4), 0 0 10px red, 0 0 10px cyan; }
         .car-title { text-align: center; }
+        
+        #fav-btn { position: absolute; top: 20px; right: 30px; font-size: 2.5rem; color: rgba(255,255,255,0.3); cursor: pointer; z-index: 30; transition: all 0.3s; user-select: none; }
+        #fav-btn:hover { color: rgba(255,255,255,0.8); transform: scale(1.1); }
+        #fav-btn.active { color: #ffeb3b; text-shadow: 0 0 15px #ffeb3b; }
+        
+        #fav-tab-btn { position: absolute; top: 30px; left: 30px; font-size: 1.2rem; color: rgba(255,255,255,0.5); cursor: pointer; z-index: 30; transition: all 0.3s; text-transform: uppercase; letter-spacing: 0.1rem; user-select: none; border: 1px solid rgba(255,255,255,0.3); padding: 8px 16px; border-radius: 4px; }
+        #fav-tab-btn:hover { color: #fff; border-color: #fff; background: rgba(255,255,255,0.1); }
+
+        #fav-panel { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.85); backdrop-filter: blur(10px); z-index: 50; display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.4s ease; }
+        #fav-panel.open { opacity: 1; pointer-events: auto; }
+        
+        #fav-panel-content { width: 80%; max-width: 800px; max-height: 80vh; display: flex; flex-direction: column; background: rgba(20,20,20,0.9); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; overflow: hidden; box-shadow: 0 10px 40px rgba(0,0,0,0.8); }
+        
+        #fav-panel-header { padding: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; align-items: center; color: #fff; }
+        #fav-panel-header h2 { margin: 0; font-weight: normal; letter-spacing: 0.2rem; text-transform: uppercase; font-size: 1.5rem; text-shadow: 2px 0 red, -2px 0 cyan; }
+        #fav-panel-close { background: none; border: none; color: #fff; font-size: 2rem; cursor: pointer; transition: transform 0.2s; }
+        #fav-panel-close:hover { transform: scale(1.2); color: red; }
+        
+        #fav-panel-list { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 10px; }
+        .fav-item { display: flex; justify-content: space-between; align-items: center; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 4px; transition: background 0.2s; color: #fff; }
+        .fav-item:hover { background: rgba(255,255,255,0.1); }
+        .fav-item-title { font-size: 1.2rem; letter-spacing: 0.1rem; flex: 1; }
+        .fav-item-actions { display: flex; gap: 10px; }
+        .fav-action-btn { background: none; border: 1px solid rgba(255,255,255,0.3); color: #fff; padding: 6px 12px; cursor: pointer; border-radius: 3px; text-transform: uppercase; font-size: 0.8rem; letter-spacing: 0.1rem; transition: all 0.2s; }
+        .fav-action-btn:hover { background: rgba(255,255,255,0.2); border-color: #fff; }
+        .fav-action-btn.delete:hover { background: rgba(255,0,0,0.3); border-color: red; color: #ffaaaa; }
+        
+        #fav-panel-footer { padding: 20px; border-top: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: center; }
+        #fav-export-btn { background: #fff; color: #000; border: none; padding: 12px 24px; font-size: 1rem; text-transform: uppercase; letter-spacing: 0.1rem; cursor: pointer; border-radius: 4px; font-weight: bold; transition: transform 0.2s; }
+        #fav-export-btn:hover { transform: scale(1.05); box-shadow: 0 0 15px rgba(255,255,255,0.5); }
+
         @keyframes glitch {
             0% { text-shadow: 5px 0 0 red, -5px 0 0 cyan; transform: translate(-50%, -50%) skewX(0deg); }
             5% { text-shadow: -5px 0 0 red, 5px 0 0 cyan; transform: translate(-50%, -50%) skewX(15deg); }
@@ -32,6 +63,23 @@
     <div id="overlay">V O I D</div>
     <div id="instructions">◄ Left / Right Arrows to Traverse ►</div>
     <div id="carousel"></div>
+    
+    <div id="fav-btn">★</div>
+    <div id="fav-tab-btn">Favorites</div>
+    
+    <div id="fav-panel" class="">
+        <div id="fav-panel-content">
+            <div id="fav-panel-header">
+                <h2>Saved Favorites</h2>
+                <button id="fav-panel-close">×</button>
+            </div>
+            <div id="fav-panel-list"></div>
+            <div id="fav-panel-footer">
+                <button id="fav-export-btn">Copy Favorites JSON</button>
+            </div>
+        </div>
+    </div>
+    
     <canvas id="glcanvas"></canvas>
     
     <script>
@@ -420,23 +468,28 @@
         let mouseY = window.innerHeight / 2;
         const overlay = document.getElementById('overlay');
         const instructions = document.getElementById('instructions');
+        
+        let temporaryFavoriteOverride = null;
 
         function updateUI(instant = false) {
+            temporaryFavoriteOverride = null;
             const pInfo = getProgram(gl, mainCache, currentSlide);
             if (!pInfo) { overlay.innerText = "ERROR"; instructions.innerText = "Critical shader failure"; return; }
             overlay.innerText = pInfo.title;
             instructions.innerText = "◄ Traverse (Slide " + (currentSlide + 1) + "/" + TOTAL_SLIDES + ") ►";
             updateCarousel(instant);
+            if (typeof updateFavButton === 'function') updateFavButton();
         }
 
         document.addEventListener('keydown', (e) => {
             if (e.key === 'ArrowRight') { currentSlide = (currentSlide + 1) % TOTAL_SLIDES; updateUI(); }
             else if (e.key === 'ArrowLeft') { currentSlide = (currentSlide - 1 + TOTAL_SLIDES) % TOTAL_SLIDES; updateUI(); }
+            else if (e.key === 'f' || e.key === 'F') { toggleFavorite(); }
         });
 
         document.addEventListener('click', (e) => {
-            if (e.target.closest('#carousel')) return;
-            const pInfo = getProgram(gl, mainCache, currentSlide);
+            if (e.target.closest('#carousel') || e.target.closest('#fav-panel') || e.target.closest('#fav-tab-btn') || e.target.closest('#fav-btn')) return;
+            const pInfo = temporaryFavoriteOverride || getProgram(gl, mainCache, currentSlide);
             if(pInfo && pInfo.fsSource) {
                 // If it's a hardcoded shader, replace ${MOUSE_DISTORTION} string with the actual macro code
                 let sourceToCopy = pInfo.fsSource;
@@ -465,6 +518,137 @@
             }
         });
 
+        // --- Favorites Logic ---
+        let favorites = JSON.parse(localStorage.getItem('fractal_favorites') || '[]');
+
+        function saveFavorites() {
+            localStorage.setItem('fractal_favorites', JSON.stringify(favorites));
+            renderFavoritesList();
+        }
+
+        function toggleFavorite() {
+            const pInfo = temporaryFavoriteOverride || getProgram(gl, mainCache, currentSlide);
+            if (!pInfo) return;
+            
+            let sourceToSave = pInfo.fsSource;
+            if(sourceToSave.includes('${MOUSE_DISTORTION}')) {
+                sourceToSave = sourceToSave.replace('${MOUSE_DISTORTION}', MOUSE_DISTORTION);
+            }
+            
+            const existingIdx = favorites.findIndex(f => f.title === pInfo.title);
+            if (existingIdx >= 0) {
+                favorites.splice(existingIdx, 1);
+            } else {
+                favorites.push({ title: pInfo.title, fsSource: sourceToSave });
+            }
+            saveFavorites();
+            updateFavButton();
+        }
+
+        function updateFavButton() {
+            const btn = document.getElementById('fav-btn');
+            const pInfo = temporaryFavoriteOverride || getProgram(gl, mainCache, currentSlide);
+            if (!pInfo) return;
+            
+            const isFav = favorites.some(f => f.title === pInfo.title);
+            if (isFav) {
+                btn.classList.add('active');
+            } else {
+                btn.classList.remove('active');
+            }
+        }
+
+        document.getElementById('fav-btn').addEventListener('click', toggleFavorite);
+        
+        const favPanel = document.getElementById('fav-panel');
+        document.getElementById('fav-tab-btn').addEventListener('click', () => {
+            favPanel.classList.add('open');
+            renderFavoritesList();
+        });
+        
+        document.getElementById('fav-panel-close').addEventListener('click', () => {
+            favPanel.classList.remove('open');
+        });
+
+        function loadFavoriteIntoView(fav) {
+            const fragmentShader = createShader(gl, gl.FRAGMENT_SHADER, fav.fsSource);
+            if (!fragmentShader) return;
+            
+            const program = gl.createProgram();
+            gl.attachShader(program, gl.vertexShader);
+            gl.attachShader(program, fragmentShader);
+            gl.linkProgram(program);
+            
+            temporaryFavoriteOverride = {
+                title: fav.title,
+                program: program,
+                fsSource: fav.fsSource,
+                timeLoc: gl.getUniformLocation(program, 'u_time'),
+                resLoc: gl.getUniformLocation(program, 'u_resolution'),
+                mouseLoc: gl.getUniformLocation(program, 'u_mouse'),
+                posAttr: gl.getAttribLocation(program, 'aVertexPosition')
+            };
+            
+            overlay.innerText = fav.title;
+            instructions.innerText = "◄ Traverse arrows to exit Favorite View ►";
+            updateFavButton();
+        }
+
+        function renderFavoritesList() {
+            const list = document.getElementById('fav-panel-list');
+            list.innerHTML = '';
+            
+            if (favorites.length === 0) {
+                list.innerHTML = '<div style="color: rgba(255,255,255,0.4); text-align: center; padding: 20px;">No favorites saved yet. Press F or click the ★ to save some!</div>';
+                return;
+            }
+            
+            favorites.forEach((fav, index) => {
+                const item = document.createElement('div');
+                item.className = 'fav-item';
+                
+                const title = document.createElement('div');
+                title.className = 'fav-item-title';
+                title.innerText = fav.title;
+                
+                const actions = document.createElement('div');
+                actions.className = 'fav-item-actions';
+                
+                const viewBtn = document.createElement('button');
+                viewBtn.className = 'fav-action-btn';
+                viewBtn.innerText = 'View';
+                viewBtn.addEventListener('click', () => {
+                    loadFavoriteIntoView(fav);
+                    favPanel.classList.remove('open');
+                });
+                
+                const delBtn = document.createElement('button');
+                delBtn.className = 'fav-action-btn delete';
+                delBtn.innerText = 'Remove';
+                delBtn.addEventListener('click', () => {
+                    favorites.splice(index, 1);
+                    saveFavorites();
+                    updateFavButton();
+                });
+                
+                actions.appendChild(viewBtn);
+                actions.appendChild(delBtn);
+                item.appendChild(title);
+                item.appendChild(actions);
+                list.appendChild(item);
+            });
+        }
+        
+        document.getElementById('fav-export-btn').addEventListener('click', () => {
+            const jsonStr = JSON.stringify(favorites, null, 2);
+            navigator.clipboard.writeText(jsonStr).then(() => {
+                const btn = document.getElementById('fav-export-btn');
+                const orig = btn.innerText;
+                btn.innerText = "COPIED TO CLIPBOARD!";
+                setTimeout(() => { btn.innerText = orig; }, 2000);
+            });
+        });
+        
         updateUI(true);
 
         function resizeCanvasToDisplaySize(canvas) {
@@ -478,7 +662,7 @@
 
         function render(time) {
             time *= 0.001; 
-            const progInfo = getProgram(gl, mainCache, currentSlide);
+            const progInfo = temporaryFavoriteOverride || getProgram(gl, mainCache, currentSlide);
             if (progInfo) {
                 resizeCanvasToDisplaySize(canvas);
                 gl.viewport(0, 0, canvas.width, canvas.height);
