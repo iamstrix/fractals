@@ -25,9 +25,41 @@
         #fav-tab-btn { position: absolute; top: 30px; left: 30px; font-size: 1.2rem; color: rgba(255,255,255,0.5); cursor: pointer; z-index: 30; transition: all 0.3s; text-transform: uppercase; letter-spacing: 0.1rem; user-select: none; border: 1px solid rgba(255,255,255,0.3); padding: 8px 16px; border-radius: 4px; }
         #fav-tab-btn:hover { color: #fff; border-color: #fff; background: rgba(255,255,255,0.1); }
 
-        #speed-control { position: absolute; bottom: 30px; right: 30px; display: flex; flex-direction: column; align-items: flex-end; color: rgba(255,255,255,0.5); font-size: 0.9rem; z-index: 30; user-select: none; }
-        #speed-control label { margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.1rem; }
-        #speed-slider { width: 120px; cursor: pointer; accent-color: #fff; }
+        #speed-control {
+            position: absolute;
+            bottom: 30px;
+            right: 30px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 0.9rem;
+            z-index: 30;
+            user-select: none;
+            text-transform: uppercase;
+            letter-spacing: 0.1rem;
+        }
+        #speed-slider {
+            width: 100px;
+            cursor: pointer;
+            accent-color: #fff;
+        }
+        #speed-input {
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            color: #fff;
+            padding: 3px 6px;
+            font-family: inherit;
+            font-size: 0.85rem;
+            border-radius: 3px;
+            width: 55px;
+            text-align: right;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        #speed-input:focus {
+            border-color: #fff;
+        }
 
         #fav-panel { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.85); backdrop-filter: blur(10px); z-index: 50; display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.4s ease; }
         #fav-panel.open { opacity: 1; pointer-events: auto; }
@@ -85,8 +117,9 @@
     </div>
     
     <div id="speed-control">
-        <label for="speed-slider">Speed: <span id="speed-value">1.0</span>x</label>
-        <input type="range" id="speed-slider" min="0" max="3" step="0.1" value="1.0">
+        <label for="speed-slider">Speed:</label>
+        <input type="range" id="speed-slider" min="0" max="3" step="0.05" value="1.0">
+        <input type="number" id="speed-input" min="0" max="10" step="0.01" value="1.00">
     </div>
     
     <canvas id="glcanvas"></canvas>
@@ -491,13 +524,14 @@
         }
 
         document.addEventListener('keydown', (e) => {
+            if (e.target.tagName === 'INPUT') return;
             if (e.key === 'ArrowRight') { currentSlide = (currentSlide + 1) % TOTAL_SLIDES; updateUI(); }
             else if (e.key === 'ArrowLeft') { currentSlide = (currentSlide - 1 + TOTAL_SLIDES) % TOTAL_SLIDES; updateUI(); }
             else if (e.key === 'f' || e.key === 'F') { toggleFavorite(); }
         });
 
         document.addEventListener('click', (e) => {
-            if (e.target.closest('#carousel') || e.target.closest('#fav-panel') || e.target.closest('#fav-tab-btn') || e.target.closest('#fav-btn')) return;
+            if (e.target.closest('#carousel') || e.target.closest('#fav-panel') || e.target.closest('#fav-tab-btn') || e.target.closest('#fav-btn') || e.target.closest('#speed-control') || e.target.closest('input')) return;
             const pInfo = temporaryFavoriteOverride || getProgram(gl, mainCache, currentSlide);
             if(pInfo && pInfo.fsSource) {
                 // If it's a hardcoded shader, replace ${MOUSE_DISTORTION} string with the actual macro code
@@ -673,9 +707,22 @@
         let lastTime = 0;
         let speedMultiplier = 1.0;
         
-        document.getElementById('speed-slider').addEventListener('input', (e) => {
+        const speedSlider = document.getElementById('speed-slider');
+        const speedInput = document.getElementById('speed-input');
+
+        speedSlider.addEventListener('input', (e) => {
             speedMultiplier = parseFloat(e.target.value);
-            document.getElementById('speed-value').innerText = speedMultiplier.toFixed(1);
+            speedInput.value = speedMultiplier.toFixed(2);
+        });
+
+        speedInput.addEventListener('input', (e) => {
+            let val = parseFloat(e.target.value);
+            if (!isNaN(val) && val >= 0) {
+                speedMultiplier = val;
+                if (val <= parseFloat(speedSlider.max)) {
+                    speedSlider.value = val;
+                }
+            }
         });
 
         function render(now) {
