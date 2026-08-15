@@ -7,8 +7,83 @@
     <style>
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #000; font-family: 'Courier New', Courier, monospace; }
         canvas { display: block; width: 100vw; height: 100vh; }
-        #overlay { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #fff; font-size: 4rem; font-weight: bold; mix-blend-mode: exclusion; pointer-events: none; text-align: center; text-transform: uppercase; letter-spacing: 1rem; z-index: 10; animation: glitch 2s infinite linear alternate-reverse, pulse 4s infinite; white-space: nowrap; }
-        #instructions { position: absolute; bottom: 30px; width: 100%; text-align: center; color: rgba(255, 255, 255, 0.4); font-size: 1.2rem; pointer-events: none; z-index: 10; letter-spacing: 0.2rem; text-transform: uppercase; }
+        #overlay { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #fff; font-size: 4rem; font-weight: bold; mix-blend-mode: exclusion; pointer-events: none; text-align: center; text-transform: uppercase; letter-spacing: 1rem; z-index: 10; animation: glitch 2s infinite linear alternate-reverse; white-space: nowrap; }
+        #instructions { position: absolute; bottom: 90px; width: 100%; text-align: center; color: rgba(255, 255, 255, 0.4); font-size: 1.2rem; pointer-events: none; z-index: 10; letter-spacing: 0.2rem; text-transform: uppercase; }
+        #carousel { position: absolute; bottom: 20px; width: 100%; height: 160px; pointer-events: auto; z-index: 20; overflow: hidden; -webkit-mask-image: linear-gradient(to right, transparent, black 15%, black 85%, transparent); mask-image: linear-gradient(to right, transparent, black 15%, black 85%, transparent); }
+        .carousel-item { position: absolute; left: 50%; top: 20px; display: flex; flex-direction: column; align-items: center; color: rgba(255, 255, 255, 0.4); font-size: 1rem; cursor: pointer; transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94); white-space: nowrap; text-transform: uppercase; letter-spacing: 0.1rem; transform-origin: center center; }
+        .carousel-item:hover { color: rgba(255, 255, 255, 0.8); }
+        .carousel-item.active { color: #fff; font-weight: bold; text-shadow: 0 0 10px rgba(255,255,255,0.5), 2px 0 0 red, -2px 0 0 cyan; pointer-events: none; }
+        .carousel-item canvas { width: 160px; height: 90px; border-radius: 4px; border: 2px solid transparent; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(0,0,0,0.5); display: block; margin-bottom: 8px; }
+        .carousel-item:hover canvas { border-color: rgba(255,255,255,0.5); }
+        .carousel-item.active canvas { border-color: #fff; box-shadow: 0 0 20px rgba(255,255,255,0.4), 0 0 10px red, 0 0 10px cyan; }
+        .car-title { text-align: center; font-size: 0.95rem; }
+        
+        #fav-btn { position: absolute; top: 20px; right: 30px; font-size: 2.5rem; color: rgba(255,255,255,0.3); cursor: pointer; z-index: 30; transition: all 0.3s; user-select: none; }
+        #fav-btn:hover { color: rgba(255,255,255,0.8); transform: scale(1.1); }
+        #fav-btn.active { color: #ffeb3b; text-shadow: 0 0 15px #ffeb3b; }
+        
+        #fav-tab-btn { position: absolute; top: 30px; left: 30px; font-size: 1.2rem; color: rgba(255,255,255,0.5); cursor: pointer; z-index: 30; transition: all 0.3s; text-transform: uppercase; letter-spacing: 0.1rem; user-select: none; border: 1px solid rgba(255,255,255,0.3); padding: 8px 16px; border-radius: 4px; }
+        #fav-tab-btn:hover { color: #fff; border-color: #fff; background: rgba(255,255,255,0.1); }
+
+        #speed-control {
+            position: absolute;
+            bottom: 30px;
+            right: 30px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 0.9rem;
+            z-index: 30;
+            user-select: none;
+            text-transform: uppercase;
+            letter-spacing: 0.1rem;
+        }
+        #speed-slider {
+            width: 100px;
+            cursor: pointer;
+            accent-color: #fff;
+        }
+        #speed-input {
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            color: #fff;
+            padding: 3px 6px;
+            font-family: inherit;
+            font-size: 0.85rem;
+            border-radius: 3px;
+            width: 55px;
+            text-align: right;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        #speed-input:focus {
+            border-color: #fff;
+        }
+
+        #fav-panel { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.85); backdrop-filter: blur(10px); z-index: 50; display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.4s ease; }
+        #fav-panel.open { opacity: 1; pointer-events: auto; }
+        
+        #fav-panel-content { width: 80%; max-width: 800px; max-height: 80vh; display: flex; flex-direction: column; background: rgba(20,20,20,0.9); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; overflow: hidden; box-shadow: 0 10px 40px rgba(0,0,0,0.8); }
+        
+        #fav-panel-header { padding: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; align-items: center; color: #fff; }
+        #fav-panel-header h2 { margin: 0; font-weight: normal; letter-spacing: 0.2rem; text-transform: uppercase; font-size: 1.5rem; text-shadow: 2px 0 red, -2px 0 cyan; }
+        #fav-panel-close { background: none; border: none; color: #fff; font-size: 2rem; cursor: pointer; transition: transform 0.2s; }
+        #fav-panel-close:hover { transform: scale(1.2); color: red; }
+        
+        #fav-panel-list { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 10px; }
+        .fav-item { display: flex; justify-content: space-between; align-items: center; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 4px; transition: background 0.2s; color: #fff; }
+        .fav-item:hover { background: rgba(255,255,255,0.1); }
+        .fav-item-title { font-size: 1.2rem; letter-spacing: 0.1rem; flex: 1; }
+        .fav-item-actions { display: flex; gap: 10px; }
+        .fav-action-btn { background: none; border: 1px solid rgba(255,255,255,0.3); color: #fff; padding: 6px 12px; cursor: pointer; border-radius: 3px; text-transform: uppercase; font-size: 0.8rem; letter-spacing: 0.1rem; transition: all 0.2s; }
+        .fav-action-btn:hover { background: rgba(255,255,255,0.2); border-color: #fff; }
+        .fav-action-btn.delete:hover { background: rgba(255,0,0,0.3); border-color: red; color: #ffaaaa; }
+        
+        #fav-panel-footer { padding: 20px; border-top: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: center; }
+        #fav-export-btn { background: #fff; color: #000; border: none; padding: 12px 24px; font-size: 1rem; text-transform: uppercase; letter-spacing: 0.1rem; cursor: pointer; border-radius: 4px; font-weight: bold; transition: transform 0.2s; }
+        #fav-export-btn:hover { transform: scale(1.05); box-shadow: 0 0 15px rgba(255,255,255,0.5); }
+
         @keyframes glitch {
             0% { text-shadow: 5px 0 0 red, -5px 0 0 cyan; transform: translate(-50%, -50%) skewX(0deg); }
             5% { text-shadow: -5px 0 0 red, 5px 0 0 cyan; transform: translate(-50%, -50%) skewX(15deg); }
@@ -17,12 +92,35 @@
             95% { text-shadow: 5px 0 0 red, -5px 0 0 cyan; transform: translate(-50%, -50%) skewX(0deg); }
             100% { text-shadow: -8px 5px 0 red, 8px -5px 0 cyan; transform: translate(-50%, -50%) skewX(5deg); }
         }
-        @keyframes pulse { 0% { opacity: 0.8; scale: 1; } 50% { opacity: 1; scale: 1.1; } 100% { opacity: 0.8; scale: 1; } }
     </style>
 </head>
 <body>
     <div id="overlay">V O I D</div>
     <div id="instructions">◄ Left / Right Arrows to Traverse ►</div>
+    <div id="carousel"></div>
+    
+    <div id="fav-btn">★</div>
+    <div id="fav-tab-btn">Favorites</div>
+    
+    <div id="fav-panel" class="">
+        <div id="fav-panel-content">
+            <div id="fav-panel-header">
+                <h2>Saved Favorites</h2>
+                <button id="fav-panel-close">×</button>
+            </div>
+            <div id="fav-panel-list"></div>
+            <div id="fav-panel-footer">
+                <button id="fav-export-btn">Copy Favorites JSON</button>
+            </div>
+        </div>
+    </div>
+    
+    <div id="speed-control">
+        <label for="speed-slider">Speed:</label>
+        <input type="range" id="speed-slider" min="0" max="3" step="0.05" value="1.0">
+        <input type="number" id="speed-input" min="0" max="10" step="0.01" value="1.00">
+    </div>
+    
     <canvas id="glcanvas"></canvas>
     
     <script>
@@ -35,20 +133,12 @@
             void main() { gl_Position = aVertexPosition; }
         `;
 
-        // Mouse distortion macro injected into all shaders
-        const MOUSE_DISTORTION = `
-            vec2 mouse_uv = (u_mouse * 2.0 - u_resolution.xy) / min(u_resolution.x, u_resolution.y);
-            float m_dist = length(uv - mouse_uv);
-            uv -= (uv - mouse_uv) * smoothstep(0.8, 0.0, m_dist) * 0.3;
-        `;
-
         const fsVoid = `
-            precision highp float; uniform vec2 u_resolution; uniform float u_time; uniform vec2 u_mouse;
+            precision highp float; uniform vec2 u_resolution; uniform float u_time;
             vec3 palette( in float t, in vec3 a, in vec3 b, in vec3 c, in vec3 d ) { return a + b*cos( 6.28318*(c*t+d) ); }
             mat2 rot(float a) { float s = sin(a), c = cos(a); return mat2(c, -s, s, c); }
             void main() {
                 vec2 uv = (gl_FragCoord.xy * 2.0 - u_resolution.xy) / min(u_resolution.x, u_resolution.y);
-                ${MOUSE_DISTORTION}
                 vec2 uv0 = uv; vec3 finalColor = vec3(0.0); float t = u_time * 0.6;
                 uv *= rot(sin(t * 0.2) * 0.5); uv += vec2(sin(t * 0.3), cos(t * 0.4)) * 0.2;
                 for (int i = 0; i < 5; i++) {
@@ -62,7 +152,7 @@
             }`;
 
         const fsFlesh = `
-            precision highp float; uniform vec2 u_resolution; uniform float u_time; uniform vec2 u_mouse;
+            precision highp float; uniform vec2 u_resolution; uniform float u_time;
             mat2 rot(float a) { float s = sin(a), c = cos(a); return mat2(c, -s, s, c); }
             vec2 hash( vec2 p ) { p = vec2( dot(p,vec2(127.1,311.7)), dot(p,vec2(269.5,183.3)) ); return -1.0 + 2.0*fract(sin(p)*43758.5453123); }
             float noise( in vec2 p ) {
@@ -73,7 +163,6 @@
             }
             void main() {
                 vec2 uv = (gl_FragCoord.xy * 2.0 - u_resolution.xy) / min(u_resolution.x, u_resolution.y); float t = u_time * 0.5;
-                ${MOUSE_DISTORTION}
                 uv *= 1.0 + 0.1 * sin(t * 3.0 + length(uv) * 4.0); uv *= rot(noise(uv * 2.0 + t) * 0.4);
                 vec2 z = uv; float iter = 0.0;
                 for(int i = 0; i < 40; i++) {
@@ -87,11 +176,10 @@
             }`;
 
         const fsGrid = `
-            precision highp float; uniform vec2 u_resolution; uniform float u_time; uniform vec2 u_mouse;
+            precision highp float; uniform vec2 u_resolution; uniform float u_time;
             mat2 rot(float a) { float s = sin(a), c = cos(a); return mat2(c, -s, s, c); }
             void main() {
                 vec2 uv = (gl_FragCoord.xy * 2.0 - u_resolution.xy) / min(u_resolution.x, u_resolution.y); float t = u_time * 1.5;
-                ${MOUSE_DISTORTION}
                 float quant = 10.0 + floor(100.0 * pow(sin(t*0.5)*0.5+0.5, 6.0)); vec2 p_uv = floor(uv * quant) / quant;
                 vec3 col = vec3(0.0); vec2 z = p_uv;
                 for(int i = 0; i < 8; i++) {
@@ -106,11 +194,10 @@
             }`;
 
         const fsMelt = `
-            precision highp float; uniform vec2 u_resolution; uniform float u_time; uniform vec2 u_mouse;
+            precision highp float; uniform vec2 u_resolution; uniform float u_time;
             vec3 hsv2rgb(vec3 c) { vec4 K = vec4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0); vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www); return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y); }
             void main() {
                 vec2 uv = (gl_FragCoord.xy * 2.0 - u_resolution.xy) / min(u_resolution.x, u_resolution.y); float t = u_time * 2.0;
-                ${MOUSE_DISTORTION}
                 for(int i = 1; i <= 5; i++) { float fi = float(i); vec2 p = uv; p.x += 0.3 / fi * sin(fi * 3.0 * uv.y + t) + t * 0.1; p.y += 0.3 / fi * cos(fi * 3.0 * uv.x + t) - t * 0.1; uv = p; }
                 float r = length(uv); float hue = r * 0.5 + t * 0.3 + sin(atan(uv.y, uv.x) * 5.0 + t);
                 vec3 col = hsv2rgb(vec3(hue, 1.0, 1.0)); col *= (0.5 + 0.5 * sin(r * 20.0 - t * 10.0));
@@ -119,11 +206,10 @@
             }`;
 
         const fsEyes = `
-            precision highp float; uniform vec2 u_resolution; uniform float u_time; uniform vec2 u_mouse;
+            precision highp float; uniform vec2 u_resolution; uniform float u_time;
             vec2 hash2( vec2 p ) { return fract(sin(vec2(dot(p,vec2(127.1,311.7)),dot(p,vec2(269.5,183.3))))*43758.5453); }
             void main() {
                 vec2 uv = (gl_FragCoord.xy * 2.0 - u_resolution.xy) / min(u_resolution.x, u_resolution.y); float t = u_time * 3.0;
-                ${MOUSE_DISTORTION}
                 uv *= 2.0 + sin(t*0.5); uv.x += sin(t * 10.0) * 0.05; uv.y += cos(t * 8.0) * 0.05;
                 vec2 p = floor(uv * 5.0); vec2 f = fract(uv * 5.0); float min_dist = 1.0; vec2 closest_point;
                 for (int y = -1; y <= 1; y++) {
@@ -140,11 +226,10 @@
             }`;
 
         const fsNeuron = `
-            precision highp float; uniform vec2 u_resolution; uniform float u_time; uniform vec2 u_mouse;
+            precision highp float; uniform vec2 u_resolution; uniform float u_time;
             mat2 rot(float a) { float s = sin(a), c = cos(a); return mat2(c, -s, s, c); }
             void main() {
                 vec2 uv = (gl_FragCoord.xy * 2.0 - u_resolution.xy) / min(u_resolution.x, u_resolution.y); float t = u_time * 1.2;
-                ${MOUSE_DISTORTION}
                 vec3 col = vec3(0.0); vec2 z = uv;
                 for (int i = 0; i < 6; i++) {
                     float fi = float(i); z = abs(z) - vec2(0.5 + 0.2*sin(t*2.0)); z *= rot(t * 0.5 + fi * 1.5 + sin(t*5.0)*0.2); z *= 1.4;
@@ -154,11 +239,10 @@
             }`;
 
         const fsHell = `
-            precision highp float; uniform vec2 u_resolution; uniform float u_time; uniform vec2 u_mouse;
+            precision highp float; uniform vec2 u_resolution; uniform float u_time;
             mat2 rot(float a) { float s = sin(a), c = cos(a); return mat2(c, -s, s, c); }
             void main() {
                 vec2 uv = (gl_FragCoord.xy * 2.0 - u_resolution.xy) / min(u_resolution.x, u_resolution.y); float t = u_time * 2.5;
-                ${MOUSE_DISTORTION}
                 uv *= 1.5 + sin(t)*0.5; uv += vec2(sin(t*0.5), t*0.8); uv *= rot(sin(t * 0.3));
                 uv.x += 0.2 * sin(uv.y * 10.0 - t * 5.0); uv.y += 0.2 * cos(uv.x * 10.0 + t * 4.0);
                 vec2 z = uv; vec2 c = vec2(-0.745, 0.186) + vec2(sin(t)*0.01, cos(t)*0.01); float iter = 0.0;
@@ -170,10 +254,9 @@
             }`;
 
         const fsSpasm = `
-            precision highp float; uniform vec2 u_resolution; uniform float u_time; uniform vec2 u_mouse;
+            precision highp float; uniform vec2 u_resolution; uniform float u_time;
             void main() {
                 vec2 uv = (gl_FragCoord.xy * 2.0 - u_resolution.xy) / min(u_resolution.x, u_resolution.y); float t = u_time * 5.0; vec3 col = vec3(0.0);
-                ${MOUSE_DISTORTION}
                 for (int i = 1; i < 7; i++) {
                     float fi = float(i); uv.x += sin(uv.y * 3.0 * fi + t) / fi; uv.y += cos(uv.x * 3.0 * fi - t) / fi;
                     if (mod(t + fi, 3.0) < 0.5) uv = abs(uv) / dot(uv,uv) - vec2(0.5);
@@ -222,14 +305,11 @@
             const iterCount = Math.floor(5 + rand() * 20);
             
             return "" +
-                "precision highp float; uniform vec2 u_resolution; uniform float u_time; uniform vec2 u_mouse; " +
+                "precision highp float; uniform vec2 u_resolution; uniform float u_time; " +
                 "vec3 palette( in float t, in vec3 a, in vec3 b, in vec3 c, in vec3 d ) { return a + b*cos( 6.28318*(c*t+d) ); } " +
                 "mat2 rot(float a) { float s = sin(a), c = cos(a); return mat2(c, -s, s, c); } " +
                 "void main() { " +
                 "    vec2 uv = (gl_FragCoord.xy * 2.0 - u_resolution.xy) / min(u_resolution.x, u_resolution.y); " +
-                "    vec2 mouse_uv = (u_mouse * 2.0 - u_resolution.xy) / min(u_resolution.x, u_resolution.y); " +
-                "    float m_dist = length(uv - mouse_uv); " +
-                "    uv -= (uv - mouse_uv) * smoothstep(0.8, 0.0, m_dist) * 0.3; " +
                 "    vec2 uv0 = uv; " +
                 "    float t = u_time * " + fStr(0.2 + rand() * 3.0) + "; " +
                 (rand() > 0.6 ? "    uv = floor(uv * " + fStr(5.0 + rand()*20.0) + ") / " + fStr(5.0 + rand()*20.0) + "; " : "") +
@@ -270,13 +350,104 @@
             return shader;
         }
 
-        const vertexShader = createShader(gl, gl.VERTEX_SHADER, vsSource);
-
         const TOTAL_SLIDES = 500;
-        let compiledPrograms = new Array(TOTAL_SLIDES).fill(null);
+        const mainCache = new Array(TOTAL_SLIDES).fill(null);
 
-        function getProgram(index) {
-            if (compiledPrograms[index]) return compiledPrograms[index];
+        function getTitle(index) {
+            index = (index + TOTAL_SLIDES) % TOTAL_SLIDES;
+            if (index < hardcodedShaders.length) return hardcodedShaders[index].title;
+            return generateTitle(index);
+        }
+
+        let previousSlide = 0;
+        const carouselItems = [];
+        const carouselContainer = document.getElementById('carousel');
+        for (let i = -3; i <= 3; i++) {
+            const item = document.createElement('div');
+            item.className = 'carousel-item';
+            
+            const previewCanvas = document.createElement('canvas');
+            previewCanvas.width = 160;
+            previewCanvas.height = 90;
+            const ctxGl = previewCanvas.getContext('webgl') || previewCanvas.getContext('experimental-webgl');
+            
+            const title = document.createElement('div');
+            title.className = 'car-title';
+            
+            item.appendChild(previewCanvas);
+            item.appendChild(title);
+            carouselContainer.appendChild(item);
+            
+            const carouselItem = {
+                element: item,
+                canvas: previewCanvas,
+                gl: ctxGl,
+                cache: new Array(TOTAL_SLIDES).fill(null),
+                offset: i,
+                titleDiv: title,
+                targetIdx: 0
+            };
+            
+            item.addEventListener('click', () => {
+                if (carouselItem.offset !== 0) {
+                    currentSlide = (currentSlide + carouselItem.offset + TOTAL_SLIDES) % TOTAL_SLIDES;
+                    updateUI();
+                }
+            });
+            carouselItems.push(carouselItem);
+        }
+
+        function updateCarousel(instant = false) {
+            let delta = currentSlide - previousSlide;
+            if (delta > TOTAL_SLIDES / 2) delta -= TOTAL_SLIDES;
+            if (delta < -TOTAL_SLIDES / 2) delta += TOTAL_SLIDES;
+            
+            const isLargeJump = Math.abs(delta) > 3 || instant;
+
+            carouselItems.forEach(item => {
+                let newOffset;
+                let didWrap = false;
+
+                if (isLargeJump) {
+                    newOffset = item.offset;
+                    didWrap = true;
+                } else {
+                    newOffset = item.offset - delta;
+                    if (newOffset < -3) { newOffset += 7; didWrap = true; }
+                    else if (newOffset > 3) { newOffset -= 7; didWrap = true; }
+                }
+
+                const dist = Math.abs(newOffset);
+                const transformStr = `translate(calc(-50% + ${newOffset * 190}px), 0)`;
+                const opacityStr = Math.max(0.0, 1.0 - dist * 0.35);
+
+                if (didWrap) {
+                    item.element.style.transition = 'none';
+                    item.element.style.transform = transformStr;
+                    item.element.style.opacity = opacityStr;
+                    void item.element.offsetWidth; // Force reflow
+                    
+                    const idx = (currentSlide + newOffset + TOTAL_SLIDES) % TOTAL_SLIDES;
+                    item.targetIdx = idx;
+                    item.titleDiv.innerText = getTitle(idx);
+                }
+
+                item.element.style.transition = 'all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+                item.element.style.transform = transformStr;
+                item.element.style.opacity = opacityStr;
+                item.offset = newOffset;
+
+                if (newOffset === 0) {
+                    item.element.classList.add('active');
+                } else {
+                    item.element.classList.remove('active');
+                }
+            });
+            previousSlide = currentSlide;
+        }
+
+        function getProgram(glCtx, cache, index) {
+            if (cache[index]) return cache[index];
             let fsSource, title;
             if (index < hardcodedShaders.length) {
                 fsSource = hardcodedShaders[index].fs;
@@ -285,60 +456,63 @@
                 fsSource = generateSchizoShader(index);
                 title = generateTitle(index);
             }
-            const fragmentShader = createShader(gl, gl.FRAGMENT_SHADER, fsSource);
-            if (!fragmentShader) return index === 0 ? null : getProgram(0);
+
+            if (!glCtx.vertexShader) {
+                glCtx.vertexShader = createShader(glCtx, glCtx.VERTEX_SHADER, vsSource);
+                glCtx.positionBuffer = glCtx.createBuffer();
+                glCtx.bindBuffer(glCtx.ARRAY_BUFFER, glCtx.positionBuffer);
+                const positions = [ -1.0, -1.0, 1.0, -1.0, -1.0, 1.0, -1.0, 1.0, 1.0, -1.0, 1.0, 1.0 ];
+                glCtx.bufferData(glCtx.ARRAY_BUFFER, new Float32Array(positions), glCtx.STATIC_DRAW);
+            }
+
+            const fragmentShader = createShader(glCtx, glCtx.FRAGMENT_SHADER, fsSource);
+            if (!fragmentShader) return index === 0 ? null : getProgram(glCtx, cache, 0);
             
-            const program = gl.createProgram();
-            gl.attachShader(program, vertexShader);
-            gl.attachShader(program, fragmentShader);
-            gl.linkProgram(program);
+            const program = glCtx.createProgram();
+            glCtx.attachShader(program, glCtx.vertexShader);
+            glCtx.attachShader(program, fragmentShader);
+            glCtx.linkProgram(program);
             
             const pInfo = {
                 title: title,
                 program: program,
                 fsSource: fsSource,
-                timeLoc: gl.getUniformLocation(program, 'u_time'),
-                resLoc: gl.getUniformLocation(program, 'u_resolution'),
-                mouseLoc: gl.getUniformLocation(program, 'u_mouse'),
-                posAttr: gl.getAttribLocation(program, 'aVertexPosition')
+                timeLoc: glCtx.getUniformLocation(program, 'u_time'),
+                resLoc: glCtx.getUniformLocation(program, 'u_resolution'),
+                posAttr: glCtx.getAttribLocation(program, 'aVertexPosition')
             };
-            compiledPrograms[index] = pInfo;
+            cache[index] = pInfo;
             return pInfo;
         }
 
-        const positionBuffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-        const positions = [ -1.0, -1.0, 1.0, -1.0, -1.0, 1.0, -1.0, 1.0, 1.0, -1.0, 1.0, 1.0 ];
-        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
-
         let currentSlide = 0;
-        let mouseX = window.innerWidth / 2;
-        let mouseY = window.innerHeight / 2;
         const overlay = document.getElementById('overlay');
         const instructions = document.getElementById('instructions');
+        
+        let temporaryFavoriteOverride = null;
 
-        function updateUI() {
-            const pInfo = getProgram(currentSlide);
+        function updateUI(instant = false) {
+            temporaryFavoriteOverride = null;
+            const pInfo = getProgram(gl, mainCache, currentSlide);
             if (!pInfo) { overlay.innerText = "ERROR"; instructions.innerText = "Critical shader failure"; return; }
             overlay.innerText = pInfo.title;
             instructions.innerText = "◄ Traverse (Slide " + (currentSlide + 1) + "/" + TOTAL_SLIDES + ") ►";
+            updateCarousel(instant);
+            if (typeof updateFavButton === 'function') updateFavButton();
         }
 
         document.addEventListener('keydown', (e) => {
+            if (e.target.tagName === 'INPUT') return;
             if (e.key === 'ArrowRight') { currentSlide = (currentSlide + 1) % TOTAL_SLIDES; updateUI(); }
             else if (e.key === 'ArrowLeft') { currentSlide = (currentSlide - 1 + TOTAL_SLIDES) % TOTAL_SLIDES; updateUI(); }
+            else if (e.key === 'f' || e.key === 'F') { toggleFavorite(); }
         });
 
-        document.addEventListener('click', () => {
-            const pInfo = getProgram(currentSlide);
+        document.addEventListener('click', (e) => {
+            if (e.target.closest('#carousel') || e.target.closest('#fav-panel') || e.target.closest('#fav-tab-btn') || e.target.closest('#fav-btn') || e.target.closest('#speed-control') || e.target.closest('input')) return;
+            const pInfo = temporaryFavoriteOverride || getProgram(gl, mainCache, currentSlide);
             if(pInfo && pInfo.fsSource) {
-                // If it's a hardcoded shader, replace ${MOUSE_DISTORTION} string with the actual macro code
-                let sourceToCopy = pInfo.fsSource;
-                if(sourceToCopy.includes('${MOUSE_DISTORTION}')) {
-                    sourceToCopy = sourceToCopy.replace('${MOUSE_DISTORTION}', MOUSE_DISTORTION);
-                }
-                
-                navigator.clipboard.writeText(sourceToCopy).then(() => {
+                navigator.clipboard.writeText(pInfo.fsSource).then(() => {
                     const originalText = instructions.innerText;
                     instructions.innerText = "SHADER COPIED TO CLIPBOARD!";
                     setTimeout(() => { instructions.innerText = originalText; }, 1500);
@@ -347,19 +521,133 @@
                 });
             }
         });
-        
-        document.addEventListener('mousemove', (e) => {
-            mouseX = e.clientX;
-            mouseY = canvas.height - e.clientY;
-        });
-        document.addEventListener('touchmove', (e) => {
-            if(e.touches.length > 0) {
-                mouseX = e.touches[0].clientX;
-                mouseY = canvas.height - e.touches[0].clientY;
+
+        // --- Favorites Logic ---
+        let favorites = JSON.parse(localStorage.getItem('fractal_favorites') || '[]');
+
+        function saveFavorites() {
+            localStorage.setItem('fractal_favorites', JSON.stringify(favorites));
+            renderFavoritesList();
+        }
+
+        function toggleFavorite() {
+            const pInfo = temporaryFavoriteOverride || getProgram(gl, mainCache, currentSlide);
+            if (!pInfo) return;
+            
+            const existingIdx = favorites.findIndex(f => f.title === pInfo.title);
+            if (existingIdx >= 0) {
+                favorites.splice(existingIdx, 1);
+            } else {
+                favorites.push({ title: pInfo.title, fsSource: pInfo.fsSource });
             }
+            saveFavorites();
+            updateFavButton();
+        }
+
+        function updateFavButton() {
+            const btn = document.getElementById('fav-btn');
+            const pInfo = temporaryFavoriteOverride || getProgram(gl, mainCache, currentSlide);
+            if (!pInfo) return;
+            
+            const isFav = favorites.some(f => f.title === pInfo.title);
+            if (isFav) {
+                btn.classList.add('active');
+            } else {
+                btn.classList.remove('active');
+            }
+        }
+
+        document.getElementById('fav-btn').addEventListener('click', toggleFavorite);
+        
+        const favPanel = document.getElementById('fav-panel');
+        document.getElementById('fav-tab-btn').addEventListener('click', () => {
+            favPanel.classList.add('open');
+            renderFavoritesList();
+        });
+        
+        document.getElementById('fav-panel-close').addEventListener('click', () => {
+            favPanel.classList.remove('open');
         });
 
-        updateUI();
+        function loadFavoriteIntoView(fav) {
+            const fragmentShader = createShader(gl, gl.FRAGMENT_SHADER, fav.fsSource);
+            if (!fragmentShader) return;
+            
+            const program = gl.createProgram();
+            gl.attachShader(program, gl.vertexShader);
+            gl.attachShader(program, fragmentShader);
+            gl.linkProgram(program);
+            
+            temporaryFavoriteOverride = {
+                title: fav.title,
+                program: program,
+                fsSource: fav.fsSource,
+                timeLoc: gl.getUniformLocation(program, 'u_time'),
+                resLoc: gl.getUniformLocation(program, 'u_resolution'),
+                posAttr: gl.getAttribLocation(program, 'aVertexPosition')
+            };
+            
+            overlay.innerText = fav.title;
+            instructions.innerText = "◄ Traverse arrows to exit Favorite View ►";
+            updateFavButton();
+        }
+
+        function renderFavoritesList() {
+            const list = document.getElementById('fav-panel-list');
+            list.innerHTML = '';
+            
+            if (favorites.length === 0) {
+                list.innerHTML = '<div style="color: rgba(255,255,255,0.4); text-align: center; padding: 20px;">No favorites saved yet. Press F or click the ★ to save some!</div>';
+                return;
+            }
+            
+            favorites.forEach((fav, index) => {
+                const item = document.createElement('div');
+                item.className = 'fav-item';
+                
+                const title = document.createElement('div');
+                title.className = 'fav-item-title';
+                title.innerText = fav.title;
+                
+                const actions = document.createElement('div');
+                actions.className = 'fav-item-actions';
+                
+                const viewBtn = document.createElement('button');
+                viewBtn.className = 'fav-action-btn';
+                viewBtn.innerText = 'View';
+                viewBtn.addEventListener('click', () => {
+                    loadFavoriteIntoView(fav);
+                    favPanel.classList.remove('open');
+                });
+                
+                const delBtn = document.createElement('button');
+                delBtn.className = 'fav-action-btn delete';
+                delBtn.innerText = 'Remove';
+                delBtn.addEventListener('click', () => {
+                    favorites.splice(index, 1);
+                    saveFavorites();
+                    updateFavButton();
+                });
+                
+                actions.appendChild(viewBtn);
+                actions.appendChild(delBtn);
+                item.appendChild(title);
+                item.appendChild(actions);
+                list.appendChild(item);
+            });
+        }
+        
+        document.getElementById('fav-export-btn').addEventListener('click', () => {
+            const jsonStr = JSON.stringify(favorites, null, 2);
+            navigator.clipboard.writeText(jsonStr).then(() => {
+                const btn = document.getElementById('fav-export-btn');
+                const orig = btn.innerText;
+                btn.innerText = "COPIED TO CLIPBOARD!";
+                setTimeout(() => { btn.innerText = orig; }, 2000);
+            });
+        });
+        
+        updateUI(true);
 
         function resizeCanvasToDisplaySize(canvas) {
             const displayWidth  = canvas.clientWidth;
@@ -370,21 +658,64 @@
             }
         }
 
-        function render(time) {
-            time *= 0.001; 
-            const progInfo = getProgram(currentSlide);
+        let globalTime = 0;
+        let lastTime = 0;
+        let speedMultiplier = 1.0;
+        
+        const speedSlider = document.getElementById('speed-slider');
+        const speedInput = document.getElementById('speed-input');
+
+        speedSlider.addEventListener('input', (e) => {
+            speedMultiplier = parseFloat(e.target.value);
+            speedInput.value = speedMultiplier.toFixed(2);
+        });
+
+        speedInput.addEventListener('input', (e) => {
+            let val = parseFloat(e.target.value);
+            if (!isNaN(val) && val >= 0) {
+                speedMultiplier = val;
+                if (val <= parseFloat(speedSlider.max)) {
+                    speedSlider.value = val;
+                }
+            }
+        });
+
+        function render(now) {
+            if (lastTime === 0) lastTime = now;
+            let dt = now - lastTime;
+            lastTime = now;
+            if (dt > 100) dt = 16;
+            
+            globalTime += (dt * 0.001) * speedMultiplier;
+            
+            const progInfo = temporaryFavoriteOverride || getProgram(gl, mainCache, currentSlide);
             if (progInfo) {
                 resizeCanvasToDisplaySize(canvas);
                 gl.viewport(0, 0, canvas.width, canvas.height);
                 gl.useProgram(progInfo.program);
+                gl.bindBuffer(gl.ARRAY_BUFFER, gl.positionBuffer);
                 gl.enableVertexAttribArray(progInfo.posAttr);
-                gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
                 gl.vertexAttribPointer(progInfo.posAttr, 2, gl.FLOAT, false, 0, 0);
-                gl.uniform1f(progInfo.timeLoc, time);
+                gl.uniform1f(progInfo.timeLoc, globalTime);
                 gl.uniform2f(progInfo.resLoc, canvas.width, canvas.height);
-                gl.uniform2f(progInfo.mouseLoc, mouseX, mouseY);
                 gl.drawArrays(gl.TRIANGLES, 0, 6);
             }
+
+            carouselItems.forEach(item => {
+                if (item.targetIdx === undefined || !item.gl) return;
+                const pInfo = getProgram(item.gl, item.cache, item.targetIdx);
+                if (pInfo) {
+                    item.gl.viewport(0, 0, item.canvas.width, item.canvas.height);
+                    item.gl.useProgram(pInfo.program);
+                    item.gl.bindBuffer(item.gl.ARRAY_BUFFER, item.gl.positionBuffer);
+                    item.gl.enableVertexAttribArray(pInfo.posAttr);
+                    item.gl.vertexAttribPointer(pInfo.posAttr, 2, item.gl.FLOAT, false, 0, 0);
+                    item.gl.uniform1f(pInfo.timeLoc, globalTime);
+                    item.gl.uniform2f(pInfo.resLoc, item.canvas.width, item.canvas.height);
+                    item.gl.drawArrays(item.gl.TRIANGLES, 0, 6);
+                }
+            });
+
             requestAnimationFrame(render);
         }
 
