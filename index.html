@@ -133,210 +133,92 @@
             void main() { gl_Position = aVertexPosition; }
         `;
 
-        const fsVoid = `
-            precision highp float; uniform vec2 u_resolution; uniform float u_time;
-            vec3 palette( in float t, in vec3 a, in vec3 b, in vec3 c, in vec3 d ) { return a + b*cos( 6.28318*(c*t+d) ); }
-            mat2 rot(float a) { float s = sin(a), c = cos(a); return mat2(c, -s, s, c); }
-            void main() {
-                vec2 uv = (gl_FragCoord.xy * 2.0 - u_resolution.xy) / min(u_resolution.x, u_resolution.y);
-                vec2 uv0 = uv; vec3 finalColor = vec3(0.0); float t = u_time * 0.6;
-                uv *= rot(sin(t * 0.2) * 0.5); uv += vec2(sin(t * 0.3), cos(t * 0.4)) * 0.2;
-                for (int i = 0; i < 5; i++) {
-                    float fi = float(i); uv = fract(uv * 1.5) - 0.5; uv *= rot(t * 0.3 + length(uv0) * 3.0 + fi * 0.5);
-                    float d = length(uv) * exp(-length(uv0) * 1.2);
-                    vec3 col = palette(length(uv0) + fi*.4 + t, vec3(0.5, 0.5, 0.5), vec3(0.5, 0.5, 0.5), vec3(1.0, 1.0, 1.0), vec3(0.0, 0.33, 0.67) + sin(t*2.0)*0.1); 
-                    d = sin(d*8. + t * 2.0)/8.; d = abs(d); d = pow(0.015 / d, 1.4); finalColor += col * d;
-                }
-                float noise = fract(sin(dot(gl_FragCoord.xy, vec2(12.9898, 78.233) * t)) * 43758.5453) * 0.2;
-                gl_FragColor = vec4((finalColor * (1.0 - smoothstep(0.5, 1.5, length(uv0)))) + noise, 1.0);
-            }`;
-
-        const fsFlesh = `
-            precision highp float; uniform vec2 u_resolution; uniform float u_time;
-            mat2 rot(float a) { float s = sin(a), c = cos(a); return mat2(c, -s, s, c); }
-            vec2 hash( vec2 p ) { p = vec2( dot(p,vec2(127.1,311.7)), dot(p,vec2(269.5,183.3)) ); return -1.0 + 2.0*fract(sin(p)*43758.5453123); }
-            float noise( in vec2 p ) {
-                const float K1 = 0.366025404; const float K2 = 0.211324865; vec2 i = floor( p + (p.x+p.y)*K1 ); vec2 a = p - i + (i.x+i.y)*K2;
-                vec2 o = (a.x>a.y) ? vec2(1.0,0.0) : vec2(0.0,1.0); vec2 b = a - o + K2; vec2 c = a - 1.0 + 2.0*K2;
-                vec3 h = max( 0.5-vec3(dot(a,a), dot(b,b), dot(c,c) ), 0.0 );
-                vec3 n = h*h*h*h*vec3( dot(a,hash(i+0.0)), dot(b,hash(i+o)), dot(c,hash(i+1.0))); return dot( n, vec3(70.0) );
-            }
-            void main() {
-                vec2 uv = (gl_FragCoord.xy * 2.0 - u_resolution.xy) / min(u_resolution.x, u_resolution.y); float t = u_time * 0.5;
-                uv *= 1.0 + 0.1 * sin(t * 3.0 + length(uv) * 4.0); uv *= rot(noise(uv * 2.0 + t) * 0.4);
-                vec2 z = uv; float iter = 0.0;
-                for(int i = 0; i < 40; i++) {
-                    z = vec2(z.x*z.x - z.y*z.y, 2.0*z.x*z.y) + vec2(0.35 + 0.1*sin(t), 0.35 + 0.1*cos(t*1.2));
-                    z += 0.15 * vec2(noise(z*2.0 + t), noise(z*2.0 - t)); if(length(z) > 4.0) break; iter++;
-                }
-                float smooth_iter = iter - log2(max(1.0, log2(dot(z,z)))) + 4.0; float flesh = sin(smooth_iter * 0.3 + t * 2.0) * 0.5 + 0.5;
-                float vein = sin(smooth_iter * 0.8 - t * 4.0) * 0.5 + 0.5; vec3 col = mix(vec3(0.15, 0.0, 0.05), vec3(0.7, 0.1, 0.2), flesh); 
-                col = mix(col, vec3(0.3, 0.6, 0.1), vein * 0.3); col *= smoothstep(0.05, 0.3, length(uv) + 0.1*noise(uv*10.0+t*5.0));
-                gl_FragColor = vec4(col, 1.0);
-            }`;
-
-        const fsGrid = `
-            precision highp float; uniform vec2 u_resolution; uniform float u_time;
-            mat2 rot(float a) { float s = sin(a), c = cos(a); return mat2(c, -s, s, c); }
-            void main() {
-                vec2 uv = (gl_FragCoord.xy * 2.0 - u_resolution.xy) / min(u_resolution.x, u_resolution.y); float t = u_time * 1.5;
-                float quant = 10.0 + floor(100.0 * pow(sin(t*0.5)*0.5+0.5, 6.0)); vec2 p_uv = floor(uv * quant) / quant;
-                vec3 col = vec3(0.0); vec2 z = p_uv;
-                for(int i = 0; i < 8; i++) {
-                    float fi = float(i); z = abs(z); z *= rot(3.14159 * 0.5 * floor(mod(t*0.5 + fi, 4.0))); z = z * 2.1 - vec2(1.2);
-                    if (sin(t * 10.0 + z.y * 50.0) > 0.95) z.x += 0.5 * sin(t * 50.0);
-                    float box = max(abs(z.x), abs(z.y));
-                    if (mod(fi, 2.0) == 0.0) col += vec3(1.0) * smoothstep(1.0, 0.9, box); else col -= vec3(0.0, 1.0, 1.0) * smoothstep(1.0, 0.95, box); 
-                }
-                col *= 0.7 + 0.3 * sin(gl_FragCoord.y * 4.0 - t * 30.0); float r = sin(z.x * 5.0 + t) * 0.5 + 0.5; float b = cos(z.y * 5.0 - t) * 0.5 + 0.5;
-                col.r += r * 0.6; col.b += b * 0.6;
-                gl_FragColor = vec4(clamp(col, 0.0, 1.0), 1.0);
-            }`;
-
-        const fsMelt = `
-            precision highp float; uniform vec2 u_resolution; uniform float u_time;
-            vec3 hsv2rgb(vec3 c) { vec4 K = vec4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0); vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www); return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y); }
-            void main() {
-                vec2 uv = (gl_FragCoord.xy * 2.0 - u_resolution.xy) / min(u_resolution.x, u_resolution.y); float t = u_time * 2.0;
-                for(int i = 1; i <= 5; i++) { float fi = float(i); vec2 p = uv; p.x += 0.3 / fi * sin(fi * 3.0 * uv.y + t) + t * 0.1; p.y += 0.3 / fi * cos(fi * 3.0 * uv.x + t) - t * 0.1; uv = p; }
-                float r = length(uv); float hue = r * 0.5 + t * 0.3 + sin(atan(uv.y, uv.x) * 5.0 + t);
-                vec3 col = hsv2rgb(vec3(hue, 1.0, 1.0)); col *= (0.5 + 0.5 * sin(r * 20.0 - t * 10.0));
-                col += vec3(0.5) * smoothstep(0.8, 1.0, sin(uv.x * 10.0 + t) * sin(uv.y * 10.0 - t));
-                gl_FragColor = vec4(col, 1.0);
-            }`;
-
-        const fsEyes = `
-            precision highp float; uniform vec2 u_resolution; uniform float u_time;
-            vec2 hash2( vec2 p ) { return fract(sin(vec2(dot(p,vec2(127.1,311.7)),dot(p,vec2(269.5,183.3))))*43758.5453); }
-            void main() {
-                vec2 uv = (gl_FragCoord.xy * 2.0 - u_resolution.xy) / min(u_resolution.x, u_resolution.y); float t = u_time * 3.0;
-                uv *= 2.0 + sin(t*0.5); uv.x += sin(t * 10.0) * 0.05; uv.y += cos(t * 8.0) * 0.05;
-                vec2 p = floor(uv * 5.0); vec2 f = fract(uv * 5.0); float min_dist = 1.0; vec2 closest_point;
-                for (int y = -1; y <= 1; y++) {
-                    for (int x = -1; x <= 1; x++) {
-                        vec2 lattice = vec2(float(x), float(y)); vec2 offset = hash2(p + lattice);
-                        offset.x += 0.5 * sin(t * 5.0 + offset.y * 10.0); offset.y += 0.5 * cos(t * 5.0 + offset.x * 10.0);
-                        float d = length(lattice + offset - f); if (d < min_dist) { min_dist = d; closest_point = offset; }
-                    }
-                }
-                float eye_shape = smoothstep(0.4, 0.35, min_dist); float pupil = smoothstep(0.15, 0.1, min_dist + 0.1 * sin(t*20.0));
-                vec3 col = mix(vec3(0.5, 0.1, 0.6), vec3(0.8, 0.9, 0.1), eye_shape); col = mix(col, vec3(1.0, 0.0, 0.0), pupil);
-                col += vec3(0.8, 0.0, 0.0) * (sin(min_dist * 50.0 - t * 10.0) * 0.5 + 0.5) * eye_shape * (1.0 - pupil);
-                gl_FragColor = vec4(col, 1.0);
-            }`;
-
-        const fsNeuron = `
-            precision highp float; uniform vec2 u_resolution; uniform float u_time;
-            mat2 rot(float a) { float s = sin(a), c = cos(a); return mat2(c, -s, s, c); }
-            void main() {
-                vec2 uv = (gl_FragCoord.xy * 2.0 - u_resolution.xy) / min(u_resolution.x, u_resolution.y); float t = u_time * 1.2;
-                vec3 col = vec3(0.0); vec2 z = uv;
-                for (int i = 0; i < 6; i++) {
-                    float fi = float(i); z = abs(z) - vec2(0.5 + 0.2*sin(t*2.0)); z *= rot(t * 0.5 + fi * 1.5 + sin(t*5.0)*0.2); z *= 1.4;
-                    float glow = 0.02 / min(abs(z.x), abs(z.y)); col += mix(vec3(1.0, 0.0, 0.8), vec3(0.0, 1.0, 1.0), sin(fi * 0.5 + t * 4.0) * 0.5 + 0.5) * glow;
-                }
-                gl_FragColor = vec4(col, 1.0);
-            }`;
-
-        const fsHell = `
-            precision highp float; uniform vec2 u_resolution; uniform float u_time;
-            mat2 rot(float a) { float s = sin(a), c = cos(a); return mat2(c, -s, s, c); }
-            void main() {
-                vec2 uv = (gl_FragCoord.xy * 2.0 - u_resolution.xy) / min(u_resolution.x, u_resolution.y); float t = u_time * 2.5;
-                uv *= 1.5 + sin(t)*0.5; uv += vec2(sin(t*0.5), t*0.8); uv *= rot(sin(t * 0.3));
-                uv.x += 0.2 * sin(uv.y * 10.0 - t * 5.0); uv.y += 0.2 * cos(uv.x * 10.0 + t * 4.0);
-                vec2 z = uv; vec2 c = vec2(-0.745, 0.186) + vec2(sin(t)*0.01, cos(t)*0.01); float iter = 0.0;
-                for(int i = 0; i < 50; i++) { z = vec2(z.x*z.x - z.y*z.y, 2.0*z.x*z.y) + c; if(dot(z,z) > 10.0) break; iter++; }
-                float n = pow(iter / 50.0, 0.5); vec3 col = mix(vec3(0.0), vec3(1.0, 0.0, 0.0), n*2.0);
-                col = mix(col, vec3(1.0, 0.5, 0.0), max(0.0, n*2.0 - 1.0)); col = mix(col, vec3(1.0, 1.0, 1.0), max(0.0, n*3.0 - 2.0));
-                col += vec3(1.0, 0.8, 0.2) * pow(0.05 / abs(sin(z.x * 5.0 + t * 10.0)), 1.5);
-                gl_FragColor = vec4(col, 1.0);
-            }`;
-
-        const fsSpasm = `
-            precision highp float; uniform vec2 u_resolution; uniform float u_time;
-            void main() {
-                vec2 uv = (gl_FragCoord.xy * 2.0 - u_resolution.xy) / min(u_resolution.x, u_resolution.y); float t = u_time * 5.0; vec3 col = vec3(0.0);
-                for (int i = 1; i < 7; i++) {
-                    float fi = float(i); uv.x += sin(uv.y * 3.0 * fi + t) / fi; uv.y += cos(uv.x * 3.0 * fi - t) / fi;
-                    if (mod(t + fi, 3.0) < 0.5) uv = abs(uv) / dot(uv,uv) - vec2(0.5);
-                    float val = sin(uv.x * 10.0 + t) * cos(uv.y * 10.0 - t);
-                    col.r += sin(val * 5.0 + t * fi) * 0.2; col.g += cos(val * 6.0 - t * fi) * 0.2; col.b += sin(val * 7.0 + t * fi * 0.5) * 0.2;
-                }
-                col = pow(col * 0.5 + 0.5, vec3(3.0)) * 5.0; float split = sin(t * 20.0) * 0.1;
-                col.r *= sin(uv.x * 50.0 + t * 10.0) * 0.5 + 0.5; col.b *= cos((uv.y + split) * 50.0 - t * 10.0) * 0.5 + 0.5;
-                gl_FragColor = vec4(clamp(col, 0.0, 1.0), 1.0);
-            }`;
-
         const hardcodedShaders = [
-            { title: "V O I D", fs: fsVoid }, { title: "F L E S H", fs: fsFlesh }, { title: "G R I D", fs: fsGrid }, { title: "M E L T", fs: fsMelt },
-            { title: "E Y E S", fs: fsEyes }, { title: "N E U R O N", fs: fsNeuron }, { title: "H E L L", fs: fsHell }, { title: "S P A S M", fs: fsSpasm }
+            {
+                title: "F L E S H",
+                fs: `precision highp float; uniform vec2 u_resolution; uniform float u_time;
+                mat2 rot(float a) { float s = sin(a), c = cos(a); return mat2(c, -s, s, c); }
+                vec2 hash( vec2 p ) { p = vec2( dot(p,vec2(127.1,311.7)), dot(p,vec2(269.5,183.3)) ); return -1.0 + 2.0*fract(sin(p)*43758.5453123); }
+                float noise( in vec2 p ) {
+                    const float K1 = 0.366025404; const float K2 = 0.211324865; vec2 i = floor( p + (p.x+p.y)*K1 ); vec2 a = p - i + (i.x+i.y)*K2;
+                    vec2 o = (a.x>a.y) ? vec2(1.0,0.0) : vec2(0.0,1.0); vec2 b = a - o + K2; vec2 c = a - 1.0 + 2.0*K2;
+                    vec3 h = max( 0.5-vec3(dot(a,a), dot(b,b), dot(c,c) ), 0.0 );
+                    vec3 n = h*h*h*h*vec3( dot(a,hash(i+0.0)), dot(b,hash(i+o)), dot(c,hash(i+1.0))); return dot( n, vec3(70.0) );
+                }
+                void main() {
+                    vec2 uv = (gl_FragCoord.xy * 2.0 - u_resolution.xy) / min(u_resolution.x, u_resolution.y); float t = u_time * 0.5;
+                    uv *= 1.0 + 0.1 * sin(t * 3.0 + length(uv) * 4.0); uv *= rot(noise(uv * 2.0 + t) * 0.4);
+                    vec2 z = uv; float iter = 0.0;
+                    for(int i = 0; i < 40; i++) {
+                        z = vec2(z.x*z.x - z.y*z.y, 2.0*z.x*z.y) + vec2(0.35 + 0.1*sin(t), 0.35 + 0.1*cos(t*1.2));
+                        z += 0.15 * vec2(noise(z*2.0 + t), noise(z*2.0 - t)); if(length(z) > 4.0) break; iter++;
+                    }
+                    float smooth_iter = iter - log2(max(1.0, log2(dot(z,z)))) + 4.0; float flesh = sin(smooth_iter * 0.3 + t * 2.0) * 0.5 + 0.5;
+                    float vein = sin(smooth_iter * 0.8 - t * 4.0) * 0.5 + 0.5; vec3 col = mix(vec3(0.15, 0.0, 0.05), vec3(0.7, 0.1, 0.2), flesh); 
+                    col = mix(col, vec3(0.3, 0.6, 0.1), vein * 0.3); col *= smoothstep(0.05, 0.3, length(uv) + 0.1*noise(uv*10.0+t*5.0));
+                    gl_FragColor = vec4(col, 1.0);
+                }`
+            },
+            {
+                title: "G L I T C H G E O M",
+                fs: `precision highp float; uniform vec2 u_resolution; uniform float u_time; vec3 palette( in float t, in vec3 a, in vec3 b, in vec3 c, in vec3 d ) { return a + b*cos( 6.28318*(c*t+d) ); } mat2 rot(float a) { float s = sin(a), c = cos(a); return mat2(c, -s, s, c); } void main() { vec2 uv = (gl_FragCoord.xy * 2.0 - u_resolution.xy) / min(u_resolution.x, u_resolution.y); vec2 uv0 = uv; float t = u_time * 0.89163; vec3 finalColor = vec3(0.0); for(int i = 0; i < 11; i++) { float fi = float(i); uv = uv / dot(uv, uv) - vec2(0.72405); uv *= rot(fi * 1.01870 + t * 0.66828); uv.y += 0.02496 * cos(uv.x * 4.46037 - t); float d = length(uv) * exp(-length(uv0) * 1.21883); vec3 col = palette(length(uv0) + fi*0.98500 + t, vec3(0.64226, 0.04892, 0.69627), vec3(0.05275, 0.01895, 0.80382), vec3(2.88492, 1.59619, 1.99356), vec3(0.69254, 0.48783, 0.15254)); d = sin(d*7.64454 + t * 0.98064)/4.07354; d = abs(d); d = pow(0.00668 / d, 1.30584); finalColor += col * d; } gl_FragColor = vec4(clamp(finalColor, 0.0, 1.0), 1.0); }`
+            },
+            {
+                title: "V O I D D R I V E",
+                fs: `precision highp float; uniform vec2 u_resolution; uniform float u_time; vec3 palette( in float t, in vec3 a, in vec3 b, in vec3 c, in vec3 d ) { return a + b*cos( 6.28318*(c*t+d) ); } mat2 rot(float a) { float s = sin(a), c = cos(a); return mat2(c, -s, s, c); } void main() { vec2 uv = (gl_FragCoord.xy * 2.0 - u_resolution.xy) / min(u_resolution.x, u_resolution.y); vec2 uv0 = uv; float t = u_time * 0.44652; uv *= rot(t * 0.55260); vec3 finalColor = vec3(0.0); for(int i = 0; i < 19; i++) { float fi = float(i); uv *= 1.0 + 0.01172 * sin(t * 0.02840 + length(uv) * 3.55584); uv *= rot(fi * 1.59376 + fi * 1.59376); uv.x += 0.38742 * sin(uv.y * 4.81166 + t); uv.y += 0.22928 * cos(uv.x * 7.63159 - t); float d = length(uv) * exp(-length(uv0) * 1.96949); vec3 col = palette(length(uv0) + fi*0.81723 + t, vec3(0.30870, 0.29209, 0.95592), vec3(0.76513, 0.44015, 0.48388), vec3(1.73325, 2.71569, 1.42254), vec3(0.99642, 0.95156, 0.85078)); d = sin(d*7.38940 + t * 1.30839)/8.95690; d = abs(d); d = pow(0.01360 / d, 1.40354); finalColor += col * d; } gl_FragColor = vec4(clamp(finalColor, 0.0, 1.0), 1.0); }`
+            },
+            {
+                title: "P A R A S P A S M",
+                fs: `precision highp float; uniform vec2 u_resolution; uniform float u_time; vec3 palette( in float t, in vec3 a, in vec3 b, in vec3 c, in vec3 d ) { return a + b*cos( 6.28318*(c*t+d) ); } mat2 rot(float a) { float s = sin(a), c = cos(a); return mat2(c, -s, s, c); } void main() { vec2 uv = (gl_FragCoord.xy * 2.0 - u_resolution.xy) / min(u_resolution.x, u_resolution.y); vec2 uv0 = uv; float t = u_time * 2.54791; uv *= rot(t * 0.11383); vec3 finalColor = vec3(0.0); for(int i = 0; i < 5; i++) { float fi = float(i); uv = uv / dot(uv, uv) - vec2(0.98947); uv *= rot(t * 0.67820 + length(uv0) * 6.57225); uv.y += 0.29495 * cos(uv.x * 9.46430 - t); float d = length(uv) * exp(-length(uv0) * 1.65577); vec3 col = palette(length(uv0) + fi*0.01927 + t, vec3(0.26443, 0.98573, 0.16982), vec3(0.59323, 0.36242, 0.00205), vec3(2.38695, 1.40595, 1.08755), vec3(0.33142, 0.96900, 0.38955)); d = sin(d*4.66024 + t * 4.42583)/2.37677; d = abs(d); d = pow(0.01290 / d, 1.36045); finalColor += col * d; } gl_FragColor = vec4(clamp(finalColor, 0.0, 1.0), 1.0); }`
+            },
+            {
+                title: "P A R A C O R E",
+                fs: `precision highp float; uniform vec2 u_resolution; uniform float u_time; vec3 palette( in float t, in vec3 a, in vec3 b, in vec3 c, in vec3 d ) { return a + b*cos( 6.28318*(c*t+d) ); } mat2 rot(float a) { float s = sin(a), c = cos(a); return mat2(c, -s, s, c); } void main() { vec2 uv = (gl_FragCoord.xy * 2.0 - u_resolution.xy) / min(u_resolution.x, u_resolution.y); vec2 uv0 = uv; float t = u_time * 1.29038; uv *= rot(t * 0.16583); vec3 finalColor = vec3(0.0); for(int i = 0; i < 6; i++) { float fi = float(i); uv *= 1.0 + 0.13658 * sin(t * 1.64013 + length(uv) * 5.94541); uv *= rot(sin(t + length(uv) * 4.21157) + length(uv0) * 4.73814); uv.y += 0.37831 * cos(uv.x * 5.36384 - t); float d = length(uv) * exp(-length(uv0) * 0.53387); vec3 col = palette(length(uv0) + fi*0.31367 + t, vec3(0.28741, 0.01060, 0.76848), vec3(0.38054, 0.30345, 0.97653), vec3(1.35724, 1.17384, 2.41097), vec3(0.45131, 0.60661, 0.17748)); d = sin(d*2.03600 + t * 4.95768)/2.20046; d = abs(d); d = pow(0.01558 / d, 1.42791); finalColor += col * d; } gl_FragColor = vec4(clamp(finalColor, 0.0, 1.0), 1.0); }`
+            },
+            {
+                title: "P A R A F L E S H",
+                fs: `precision highp float; uniform vec2 u_resolution; uniform float u_time;
+                vec3 palette( in float t, in vec3 a, in vec3 b, in vec3 c, in vec3 d ) { return a + b*cos( 6.28318*(c*t+d) ); }
+                mat2 rot(float a) { float s = sin(a), c = cos(a); return mat2(c, -s, s, c); }
+                vec2 hash( vec2 p ) { p = vec2( dot(p,vec2(127.1,311.7)), dot(p,vec2(269.5,183.3)) ); return -1.0 + 2.0*fract(sin(p)*43758.5453123); }
+                float noise( in vec2 p ) {
+                    const float K1 = 0.366025404; const float K2 = 0.211324865; vec2 i = floor( p + (p.x+p.y)*K1 ); vec2 a = p - i + (i.x+i.y)*K2;
+                    vec2 o = (a.x>a.y) ? vec2(1.0,0.0) : vec2(0.0,1.0); vec2 b = a - o + K2; vec2 c = a - 1.0 + 2.0*K2;
+                    vec3 h = max( 0.5-vec3(dot(a,a), dot(b,b), dot(c,c) ), 0.0 );
+                    vec3 n = h*h*h*h*vec3( dot(a,hash(i+0.0)), dot(b,hash(i+o)), dot(c,hash(i+1.0))); return dot( n, vec3(70.0) );
+                }
+                void main() {
+                    vec2 uv = (gl_FragCoord.xy * 2.0 - u_resolution.xy) / min(u_resolution.x, u_resolution.y); float t = u_time * 0.5;
+                    uv *= 1.0 + 0.1 * sin(t * 3.0 + length(uv) * 4.0); uv *= rot(noise(uv * 2.0 + t) * 0.4);
+                    vec2 z = uv; float iter = 0.0;
+                    for(int i = 0; i < 40; i++) {
+                        z = vec2(z.x*z.x - z.y*z.y, 2.0*z.x*z.y) + vec2(0.35 + 0.1*sin(t), 0.35 + 0.1*cos(t*1.2));
+                        z += 0.15 * vec2(noise(z*2.0 + t), noise(z*2.0 - t)); if(length(z) > 4.0) break; iter++;
+                    }
+                    float smooth_iter = iter - log2(max(1.0, log2(dot(z,z)))) + 4.0; float vein = sin(smooth_iter * 0.8 - t * 4.0) * 0.5 + 0.5;
+                    vec3 col = palette(smooth_iter * 0.08 + t * 0.3, vec3(0.28741, 0.01060, 0.76848), vec3(0.38054, 0.30345, 0.97653), vec3(1.35724, 1.17384, 2.41097), vec3(0.45131, 0.60661, 0.17748));
+                    col += vec3(0.1, 0.8, 0.9) * pow(vein, 4.0) * 0.6;
+                    col *= smoothstep(0.05, 0.35, length(uv) + 0.1*noise(uv*10.0+t*5.0));
+                    gl_FragColor = vec4(clamp(col, 0.0, 1.0), 1.0);
+                }`
+            },
+            {
+                title: "G L I T C H S P A S M",
+                fs: `precision highp float; uniform vec2 u_resolution; uniform float u_time; vec3 palette( in float t, in vec3 a, in vec3 b, in vec3 c, in vec3 d ) { return a + b*cos( 6.28318*(c*t+d) ); } mat2 rot(float a) { float s = sin(a), c = cos(a); return mat2(c, -s, s, c); } void main() { vec2 uv = (gl_FragCoord.xy * 2.0 - u_resolution.xy) / min(u_resolution.x, u_resolution.y); vec2 uv0 = uv; float t = u_time * 0.46854; vec3 finalColor = vec3(0.0); for(int i = 0; i < 13; i++) { float fi = float(i); uv = uv / dot(uv, uv) - vec2(0.96734); uv *= rot(t * 0.56648 + sin(t + length(uv) * 4.30305)); uv.x += 0.00821 * sin(uv.y * 12.19098 + t); float d = length(uv) * exp(-length(uv0) * 0.97368); vec3 col = palette(length(uv0) + fi*0.19015 + t, vec3(0.96844, 0.78765, 0.10935), vec3(0.05671, 0.17711, 0.54288), vec3(2.84514, 2.60139, 1.21106), vec3(0.67014, 0.38101, 0.49303)); d = sin(d*9.37867 + t * 4.79489)/8.16461; d = abs(d); d = pow(0.00684 / d, 1.45188); finalColor += col * d; } gl_FragColor = vec4(clamp(finalColor, 0.0, 1.0), 1.0); }`
+            },
+            {
+                title: "C Y B E R M O R P H 57",
+                fs: `precision highp float; uniform vec2 u_resolution; uniform float u_time; vec3 palette( in float t, in vec3 a, in vec3 b, in vec3 c, in vec3 d ) { return a + b*cos( 6.28318*(c*t+d) ); } mat2 rot(float a) { float s = sin(a), c = cos(a); return mat2(c, -s, s, c); } void main() { vec2 uv = (gl_FragCoord.xy * 2.0 - u_resolution.xy) / min(u_resolution.x, u_resolution.y); vec2 uv0 = uv; float t = u_time * 0.28616; uv *= rot(t * 0.52665); vec3 finalColor = vec3(0.0); for(int i = 0; i < 6; i++) { float fi = float(i); uv = abs(uv) - vec2(0.23459, 1.49246); uv *= rot(fi * 1.77553 + t * 0.15); uv.x += 0.20820 * sin(uv.y * 13.18766 + t); uv.y += 0.42568 * cos(uv.x * 4.94296 - t); float d = length(uv) * exp(-length(uv0) * 1.44357); vec3 col = palette(length(uv0) + fi*0.81866 + t, vec3(0.52314, 0.02706, 0.89587), vec3(0.37977, 0.15826, 0.99082), vec3(1.85324, 2.62043, 2.54623), vec3(0.54034, 0.39253, 0.71222)); d = sin(d*3.39805 + t * 0.51608)/3.33062; d = abs(d); d = pow(0.014 / (d + 0.025), 1.2); finalColor += col * d; } gl_FragColor = vec4(clamp(finalColor, 0.0, 1.0), 1.0); }`
+            },
+            {
+                title: "X E N O C O R E",
+                fs: `precision highp float; uniform vec2 u_resolution; uniform float u_time; vec3 palette( in float t, in vec3 a, in vec3 b, in vec3 c, in vec3 d ) { return a + b*cos( 6.28318*(c*t+d) ); } mat2 rot(float a) { float s = sin(a), c = cos(a); return mat2(c, -s, s, c); } void main() { vec2 uv = (gl_FragCoord.xy * 2.0 - u_resolution.xy) / min(u_resolution.x, u_resolution.y); vec2 uv0 = uv; float t = u_time * 1.33081; uv *= rot(t * 0.64913); vec3 finalColor = vec3(0.0); for(int i = 0; i < 15; i++) { float fi = float(i); uv *= 1.0 + 0.17730 * sin(t * 4.91617 + length(uv) * 2.16892); uv *= rot(fi * 2.99925 + fi * 2.99925); uv.x += 0.00675 * sin(uv.y * 4.41510 + t); uv.y += 0.12298 * cos(uv.x * 11.52652 - t); float d = length(uv) * exp(-length(uv0) * 0.77595); vec3 col = palette(length(uv0) + fi*0.32881 + t, vec3(0.11005, 0.91954, 0.26582), vec3(0.27876, 0.62216, 0.13422), vec3(2.73437, 1.57943, 1.30692), vec3(0.98547, 0.22010, 0.95268)); d = sin(d*3.24845 + t * 3.15321)/2.84127; d = abs(d); d = pow(0.01414 / d, 1.37211); finalColor += col * d; } gl_FragColor = vec4(clamp(finalColor, 0.0, 1.0), 1.0); }`
+            },
+            {
+                title: "E C H O P U L S E",
+                fs: `precision highp float; uniform vec2 u_resolution; uniform float u_time; vec3 palette( in float t, in vec3 a, in vec3 b, in vec3 c, in vec3 d ) { return a + b*cos( 6.28318*(c*t+d) ); } mat2 rot(float a) { float s = sin(a), c = cos(a); return mat2(c, -s, s, c); } void main() { vec2 uv = (gl_FragCoord.xy * 2.0 - u_resolution.xy) / min(u_resolution.x, u_resolution.y); vec2 uv0 = uv; float t = u_time * 1.14961; uv *= rot(t * 0.04006); vec3 finalColor = vec3(0.0); for(int i = 0; i < 6; i++) { float fi = float(i); uv = uv / dot(uv, uv) - vec2(0.41425); uv *= rot(length(uv0) * 1.99855 + sin(t + length(uv) * 0.96128)); uv.y += 0.37327 * cos(uv.x * 12.52945 - t); float d = length(uv) * exp(-length(uv0) * 1.09522); vec3 col = palette(length(uv0) + fi*0.27273 + t, vec3(0.73713, 0.18077, 0.12324), vec3(0.83550, 0.36177, 0.22355), vec3(2.41160, 1.47308, 1.43158), vec3(0.82556, 0.86530, 0.73754)); d = sin(d*5.20648 + t * 3.46884)/3.28310; d = abs(d); d = pow(0.01531 / d, 1.17460); finalColor += col * d; } gl_FragColor = vec4(clamp(finalColor, 0.0, 1.0), 1.0); }`
+            }
         ];
-
-        function generateSchizoShader(seed) {
-            let s = (seed * 1234567) ^ 0xDEADBEEF;
-            const rand = () => { s = Math.imul(s ^ (s >>> 15), 1 | s); s ^= s + Math.imul(s ^ (s >>> 7), 61 | s); return ((s ^ (s >>> 14)) >>> 0) / 4294967296; };
-            
-            const fStr = (v) => (v).toFixed(5);
-            const rVec3 = () => "vec3(" + fStr(rand()) + ", " + fStr(rand()) + ", " + fStr(rand()) + ")";
-            
-            const palA = rVec3(); const palB = rVec3(); const palD = rVec3();
-            const palC = "vec3(" + fStr(1.0 + rand()*2.0) + ", " + fStr(1.0 + rand()*2.0) + ", " + fStr(1.0 + rand()*2.0) + ")";
-            
-            const foldTypes = [
-                "uv = fract(uv * " + fStr(1.0 + rand() * 2.5) + ") - 0.5;",
-                "uv = abs(uv) - vec2(" + fStr(rand() * 1.5) + ", " + fStr(rand() * 1.5) + ");",
-                "uv = uv / dot(uv, uv) - vec2(" + fStr(rand() * 1.0) + ");",
-                "uv = fract(uv * " + fStr(1.0 + rand()) + ") - 0.5; uv = abs(uv) - " + fStr(rand()*0.5) + ";",
-                "uv *= 1.0 + " + fStr(rand()*0.2) + " * sin(t * " + fStr(rand()*5.0) + " + length(uv) * " + fStr(rand()*10.0) + ");"
-            ];
-            const rotMods = [
-                "t * " + fStr(rand() * 2.0),
-                "length(uv0) * " + fStr(rand() * 8.0),
-                "fi * " + fStr(rand() * 3.0),
-                "sin(t + length(uv) * " + fStr(rand()*5.0) + ")"
-            ];
-            
-            let loopInner = foldTypes[Math.floor(rand() * foldTypes.length)] + " ";
-            loopInner += "uv *= rot(" + rotMods[Math.floor(rand() * rotMods.length)] + " + " + rotMods[Math.floor(rand() * rotMods.length)] + "); ";
-            if (rand() > 0.5) loopInner += "uv.x += " + fStr(rand()*0.5) + " * sin(uv.y * " + fStr(rand()*15.0) + " + t); ";
-            if (rand() > 0.5) loopInner += "uv.y += " + fStr(rand()*0.5) + " * cos(uv.x * " + fStr(rand()*15.0) + " - t); ";
-            
-            const iterCount = Math.floor(5 + rand() * 20);
-            
-            return "" +
-                "precision highp float; uniform vec2 u_resolution; uniform float u_time; " +
-                "vec3 palette( in float t, in vec3 a, in vec3 b, in vec3 c, in vec3 d ) { return a + b*cos( 6.28318*(c*t+d) ); } " +
-                "mat2 rot(float a) { float s = sin(a), c = cos(a); return mat2(c, -s, s, c); } " +
-                "void main() { " +
-                "    vec2 uv = (gl_FragCoord.xy * 2.0 - u_resolution.xy) / min(u_resolution.x, u_resolution.y); " +
-                "    vec2 uv0 = uv; " +
-                "    float t = u_time * " + fStr(0.2 + rand() * 3.0) + "; " +
-                (rand() > 0.6 ? "    uv = floor(uv * " + fStr(5.0 + rand()*20.0) + ") / " + fStr(5.0 + rand()*20.0) + "; " : "") +
-                (rand() > 0.5 ? "    uv *= rot(t * " + fStr(rand()) + "); " : "") +
-                "    vec3 finalColor = vec3(0.0); " +
-                "    for(int i = 0; i < " + iterCount + "; i++) { " +
-                "        float fi = float(i); " +
-                "        " + loopInner + " " +
-                "        float d = length(uv) * exp(-length(uv0) * " + fStr(0.5 + rand()*1.5) + "); " +
-                "        vec3 col = palette(length(uv0) + fi*" + fStr(rand()) + " + t, " + palA + ", " + palB + ", " + palC + ", " + palD + "); " +
-                "        d = sin(d*" + fStr(2.0 + rand()*10.0) + " + t * " + fStr(rand()*5.0) + ")/" + fStr(2.0 + rand()*10.0) + "; " +
-                "        d = abs(d); d = pow(" + fStr(0.005 + rand()*0.02) + " / d, " + fStr(1.0 + rand()*0.5) + "); " +
-                "        finalColor += col * d; " +
-                "    } " +
-                "    gl_FragColor = vec4(clamp(finalColor, 0.0, 1.0), 1.0); " +
-                "}";
-        }
-
-        function generateTitle(seed) {
-            let s = (seed * 987654) ^ 0xABCDEF;
-            const rand = () => { s = Math.imul(s ^ (s >>> 15), 1 | s); s ^= s + Math.imul(s ^ (s >>> 7), 61 | s); return ((s ^ (s >>> 14)) >>> 0) / 4294967296; };
-            const prefixes = ["NEO", "CYBER", "VOID", "NULL", "FRACTAL", "ECHO", "XENO", "PARA", "HYPER", "OMNI", "DARK", "BLOOD", "GLITCH"];
-            const suffixes = ["MORPH", "CORE", "NET", "LITH", "SPASM", "PULSE", "TRANCE", "ROT", "DRIVE", "GEOM", "WAVE", "MIND"];
-            let title = (prefixes[Math.floor(rand() * prefixes.length)] + suffixes[Math.floor(rand() * suffixes.length)]).split('').join(' ');
-            if (rand() > 0.7) title += " " + Math.floor(rand()*100);
-            return title;
-        }
 
         function createShader(gl, type, source) {
             const shader = gl.createShader(type);
@@ -350,13 +232,12 @@
             return shader;
         }
 
-        const TOTAL_SLIDES = 500;
+        const TOTAL_SLIDES = hardcodedShaders.length;
         const mainCache = new Array(TOTAL_SLIDES).fill(null);
 
         function getTitle(index) {
             index = (index + TOTAL_SLIDES) % TOTAL_SLIDES;
-            if (index < hardcodedShaders.length) return hardcodedShaders[index].title;
-            return generateTitle(index);
+            return hardcodedShaders[index].title;
         }
 
         let previousSlide = 0;
@@ -447,15 +328,10 @@
         }
 
         function getProgram(glCtx, cache, index) {
+            index = (index + TOTAL_SLIDES) % TOTAL_SLIDES;
             if (cache[index]) return cache[index];
-            let fsSource, title;
-            if (index < hardcodedShaders.length) {
-                fsSource = hardcodedShaders[index].fs;
-                title = hardcodedShaders[index].title;
-            } else {
-                fsSource = generateSchizoShader(index);
-                title = generateTitle(index);
-            }
+            const fsSource = hardcodedShaders[index].fs;
+            const title = hardcodedShaders[index].title;
 
             if (!glCtx.vertexShader) {
                 glCtx.vertexShader = createShader(glCtx, glCtx.VERTEX_SHADER, vsSource);
