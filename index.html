@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Schizophrenic Fractals</title>
+    <style>
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #000; font-family: 'Courier New', Courier, monospace; }
+        canvas { display: block; width: 100vw; height: 100vh; }
+        #overlay { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #fff; font-size: 4rem; font-weight: bold; mix-blend-mode: exclusion; pointer-events: none; text-align: center; text-transform: uppercase; letter-spacing: 1rem; z-index: 10; animation: glitch 2s infinite linear alternate-reverse, pulse 4s infinite; white-space: nowrap; }
+        #instructions { position: absolute; bottom: 30px; width: 100%; text-align: center; color: rgba(255, 255, 255, 0.4); font-size: 1.2rem; pointer-events: none; z-index: 10; letter-spacing: 0.2rem; text-transform: uppercase; }
+        @keyframes glitch {
+            0% { text-shadow: 5px 0 0 red, -5px 0 0 cyan; transform: translate(-50%, -50%) skewX(0deg); }
+            5% { text-shadow: -5px 0 0 red, 5px 0 0 cyan; transform: translate(-50%, -50%) skewX(15deg); }
+            10% { text-shadow: 5px 0 0 red, -5px 0 0 cyan; transform: translate(-50%, -50%) skewX(-15deg); }
+            15% { text-shadow: -5px 0 0 red, 5px 0 0 cyan; transform: translate(-50%, -50%) skewX(0deg); }
+            95% { text-shadow: 5px 0 0 red, -5px 0 0 cyan; transform: translate(-50%, -50%) skewX(0deg); }
+            100% { text-shadow: -8px 5px 0 red, 8px -5px 0 cyan; transform: translate(-50%, -50%) skewX(5deg); }
+        }
+        @keyframes pulse { 0% { opacity: 0.8; scale: 1; } 50% { opacity: 1; scale: 1.1; } 100% { opacity: 0.8; scale: 1; } }
+    </style>
+</head>
+<body>
+    <div id="overlay">V O I D</div>
+    <div id="instructions">◄ Left / Right Arrows to Traverse ►</div>
+    <canvas id="glcanvas"></canvas>
+    
+    <script>
+        const canvas = document.getElementById('glcanvas');
+        const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+        if (!gl) document.body.innerHTML = '<h1 style="color:white; text-align:center; margin-top:20%">WebGL is required but not supported by your browser.</h1>';
+
+        const vsSource = `
+            attribute vec4 aVertexPosition;
+            void main() { gl_Position = aVertexPosition; }
+        `;
+
+        // Mouse distortion macro injected into all shaders
+        const MOUSE_DISTORTION = `
+            vec2 mouse_uv = (u_mouse * 2.0 - u_resolution.xy) / min(u_resolution.x, u_resolution.y);
+            float m_dist = length(uv - mouse_uv);
+            uv -= (uv - mouse_uv) * smoothstep(0.8, 0.0, m_dist) * 0.3;
+        `;
+
+        const fsVoid = `
+            precision highp float; uniform vec2 u_resolution; uniform float u_time; uniform vec2 u_mouse;
+            vec3 palette( in float t, in vec3 a, in vec3 b, in vec3 c, in vec3 d ) { return a + b*cos( 6.28318*(c*t+d) ); }
+            mat2 rot(float a) { float s = sin(a), c = cos(a); return mat2(c, -s, s, c); }
+            void main() {
+                vec2 uv = (gl_FragCoord.xy * 2.0 - u_resolution.xy) / min(u_resolution.x, u_resolution.y);
+                ${MOUSE_DISTORTION}
+                vec2 uv0 = uv; vec3 finalColor = vec3(0.0); float t = u_time * 0.6;
+                uv *= rot(sin(t * 0.2) * 0.5); uv += vec2(sin(t * 0.3), cos(t * 0.4)) * 0.2;
+                for (int i = 0; i < 5; i++) {
+                    float fi = float(i); uv = fract(uv * 1.5) - 0.5; uv *= rot(t * 0.3 + length(uv0) * 3.0 + fi * 0.5);
+                    float d = length(uv) * exp(-length(uv0) * 1.2);
+                    vec3 col = palette(length(uv0) + fi*.4 + t, vec3(0.5, 0.5, 0.5), vec3(0.5, 0.5, 0.5), vec3(1.0, 1.0, 1.0), vec3(0.0, 0.33, 0.67) + sin(t*2.0)*0.1); 
+                    d = sin(d*8. + t * 2.0)/8.; d = abs(d); d = pow(0.015 / d, 1.4); finalColor += col * d;
+                }
+                float noise = fract(sin(dot(gl_FragCoord.xy, vec2(12.9898, 78.233) * t)) * 43758.5453) * 0.2;
+                gl_FragColor = vec4((finalColor * (1.0 - smoothstep(0.5, 1.5, length(uv0)))) + noise, 1.0);
+            }`;
+
+        const fsFlesh = `
+            precision highp float; uniform vec2 u_resolution; uniform float u_time; uniform vec2 u_mouse;
+            mat2 rot(float a) { float s = sin(a), c = cos(a); return mat2(c, -s, s, c); }
+            vec2 hash( vec2 p ) { p = vec2( dot(p,vec2(127.1,311.7)), dot(p,vec2(269.5,183.3)) ); return -1.0 + 2.0*fract(sin(p)*43758.5453123); }
+            float noise( in vec2 p ) {
+                const float K1 = 0.366025404; const float K2 = 0.211324865; vec2 i = floor( p + (p.x+p.y)*K1 ); vec2 a = p - i + (i.x+i.y)*K2;
+                vec2 o = (a.x>a.y) ? vec2(1.0,0.0) : vec2(0.0,1.0); vec2 b = a - o + K2; vec2 c = a - 1.0 + 2.0*K2;
+                vec3 h = max( 0.5-vec3(dot(a,a), dot(b,b), dot(c,c) ), 0.0 );
+                vec3 n = h*h*h*h*vec3( dot(a,hash(i+0.0)), dot(b,hash(i+o)), dot(c,hash(i+1.0))); return dot( n, vec3(70.0) );
+            }
+            void main() {
+                vec2 uv = (gl_FragCoord.xy * 2.0 - u_resolution.xy) / min(u_resolution.x, u_resolution.y); float t = u_time * 0.5;
+                ${MOUSE_DISTORTION}
+                uv *= 1.0 + 0.1 * sin(t * 3.0 + length(uv) * 4.0); uv *= rot(noise(uv * 2.0 + t) * 0.4);
+                vec2 z = uv; float iter = 0.0;
+                for(int i = 0; i < 40; i++) {
+                    z = vec2(z.x*z.x - z.y*z.y, 2.0*z.x*z.y) + vec2(0.35 + 0.1*sin(t), 0.35 + 0.1*cos(t*1.2));
+                    z += 0.15 * vec2(noise(z*2.0 + t), noise(z*2.0 - t)); if(length(z) > 4.0) break; iter++;
+                }
+                float smooth_iter = iter - log2(max(1.0, log2(dot(z,z)))) + 4.0; float flesh = sin(smooth_iter * 0.3 + t * 2.0) * 0.5 + 0.5;
+                float vein = sin(smooth_iter * 0.8 - t * 4.0) * 0.5 + 0.5; vec3 col = mix(vec3(0.15, 0.0, 0.05), vec3(0.7, 0.1, 0.2), flesh); 
+                col = mix(col, vec3(0.3, 0.6, 0.1), vein * 0.3); col *= smoothstep(0.05, 0.3, length(uv) + 0.1*noise(uv*10.0+t*5.0));
+                gl_FragColor = vec4(col, 1.0);
+            }`;
+
+        const fsGrid = `
+            precision highp float; uniform vec2 u_resolution; uniform float u_time; uniform vec2 u_mouse;
+            mat2 rot(float a) { float s = sin(a), c = cos(a); return mat2(c, -s, s, c); }
+            void main() {
+                vec2 uv = (gl_FragCoord.xy * 2.0 - u_resolution.xy) / min(u_resolution.x, u_resolution.y); float t = u_time * 1.5;
+                ${MOUSE_DISTORTION}
+                float quant = 10.0 + floor(100.0 * pow(sin(t*0.5)*0.5+0.5, 6.0)); vec2 p_uv = floor(uv * quant) / quant;
+                vec3 col = vec3(0.0); vec2 z = p_uv;
+                for(int i = 0; i < 8; i++) {
+                    float fi = float(i); z = abs(z); z *= rot(3.14159 * 0.5 * floor(mod(t*0.5 + fi, 4.0))); z = z * 2.1 - vec2(1.2);
+                    if (sin(t * 10.0 + z.y * 50.0) > 0.95) z.x += 0.5 * sin(t * 50.0);
+                    float box = max(abs(z.x), abs(z.y));
+                    if (mod(fi, 2.0) == 0.0) col += vec3(1.0) * smoothstep(1.0, 0.9, box); else col -= vec3(0.0, 1.0, 1.0) * smoothstep(1.0, 0.95, box); 
+                }
+                col *= 0.7 + 0.3 * sin(gl_FragCoord.y * 4.0 - t * 30.0); float r = sin(z.x * 5.0 + t) * 0.5 + 0.5; float b = cos(z.y * 5.0 - t) * 0.5 + 0.5;
+                col.r += r * 0.6; col.b += b * 0.6;
+                gl_FragColor = vec4(clamp(col, 0.0, 1.0), 1.0);
+            }`;
+
+        const fsMelt = `
+            precision highp float; uniform vec2 u_resolution; uniform float u_time; uniform vec2 u_mouse;
+            vec3 hsv2rgb(vec3 c) { vec4 K = vec4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0); vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www); return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y); }
+            void main() {
+                vec2 uv = (gl_FragCoord.xy * 2.0 - u_resolution.xy) / min(u_resolution.x, u_resolution.y); float t = u_time * 2.0;
+                ${MOUSE_DISTORTION}
+                for(int i = 1; i <= 5; i++) { float fi = float(i); vec2 p = uv; p.x += 0.3 / fi * sin(fi * 3.0 * uv.y + t) + t * 0.1; p.y += 0.3 / fi * cos(fi * 3.0 * uv.x + t) - t * 0.1; uv = p; }
+                float r = length(uv); float hue = r * 0.5 + t * 0.3 + sin(atan(uv.y, uv.x) * 5.0 + t);
+                vec3 col = hsv2rgb(vec3(hue, 1.0, 1.0)); col *= (0.5 + 0.5 * sin(r * 20.0 - t * 10.0));
+                col += vec3(0.5) * smoothstep(0.8, 1.0, sin(uv.x * 10.0 + t) * sin(uv.y * 10.0 - t));
+                gl_FragColor = vec4(col, 1.0);
+            }`;
+
+        const fsEyes = `
+            precision highp float; uniform vec2 u_resolution; uniform float u_time; uniform vec2 u_mouse;
+            vec2 hash2( vec2 p ) { return fract(sin(vec2(dot(p,vec2(127.1,311.7)),dot(p,vec2(269.5,183.3))))*43758.5453); }
+            void main() {
+                vec2 uv = (gl_FragCoord.xy * 2.0 - u_resolution.xy) / min(u_resolution.x, u_resolution.y); float t = u_time * 3.0;
+                ${MOUSE_DISTORTION}
+                uv *= 2.0 + sin(t*0.5); uv.x += sin(t * 10.0) * 0.05; uv.y += cos(t * 8.0) * 0.05;
+                vec2 p = floor(uv * 5.0); vec2 f = fract(uv * 5.0); float min_dist = 1.0; vec2 closest_point;
+                for (int y = -1; y <= 1; y++) {
+                    for (int x = -1; x <= 1; x++) {
+                        vec2 lattice = vec2(float(x), float(y)); vec2 offset = hash2(p + lattice);
+                        offset.x += 0.5 * sin(t * 5.0 + offset.y * 10.0); offset.y += 0.5 * cos(t * 5.0 + offset.x * 10.0);
+                        float d = length(lattice + offset - f); if (d < min_dist) { min_dist = d; closest_point = offset; }
+                    }
+                }
+                float eye_shape = smoothstep(0.4, 0.35, min_dist); float pupil = smoothstep(0.15, 0.1, min_dist + 0.1 * sin(t*20.0));
+                vec3 col = mix(vec3(0.5, 0.1, 0.6), vec3(0.8, 0.9, 0.1), eye_shape); col = mix(col, vec3(1.0, 0.0, 0.0), pupil);
+                col += vec3(0.8, 0.0, 0.0) * (sin(min_dist * 50.0 - t * 10.0) * 0.5 + 0.5) * eye_shape * (1.0 - pupil);
+                gl_FragColor = vec4(col, 1.0);
+            }`;
+
+        const fsNeuron = `
+            precision highp float; uniform vec2 u_resolution; uniform float u_time; uniform vec2 u_mouse;
+            mat2 rot(float a) { float s = sin(a), c = cos(a); return mat2(c, -s, s, c); }
+            void main() {
+                vec2 uv = (gl_FragCoord.xy * 2.0 - u_resolution.xy) / min(u_resolution.x, u_resolution.y); float t = u_time * 1.2;
+                ${MOUSE_DISTORTION}
+                vec3 col = vec3(0.0); vec2 z = uv;
+                for (int i = 0; i < 6; i++) {
+                    float fi = float(i); z = abs(z) - vec2(0.5 + 0.2*sin(t*2.0)); z *= rot(t * 0.5 + fi * 1.5 + sin(t*5.0)*0.2); z *= 1.4;
+                    float glow = 0.02 / min(abs(z.x), abs(z.y)); col += mix(vec3(1.0, 0.0, 0.8), vec3(0.0, 1.0, 1.0), sin(fi * 0.5 + t * 4.0) * 0.5 + 0.5) * glow;
+                }
+                gl_FragColor = vec4(col, 1.0);
+            }`;
+
+        const fsHell = `
+            precision highp float; uniform vec2 u_resolution; uniform float u_time; uniform vec2 u_mouse;
+            mat2 rot(float a) { float s = sin(a), c = cos(a); return mat2(c, -s, s, c); }
+            void main() {
+                vec2 uv = (gl_FragCoord.xy * 2.0 - u_resolution.xy) / min(u_resolution.x, u_resolution.y); float t = u_time * 2.5;
+                ${MOUSE_DISTORTION}
+                uv *= 1.5 + sin(t)*0.5; uv += vec2(sin(t*0.5), t*0.8); uv *= rot(sin(t * 0.3));
+                uv.x += 0.2 * sin(uv.y * 10.0 - t * 5.0); uv.y += 0.2 * cos(uv.x * 10.0 + t * 4.0);
+                vec2 z = uv; vec2 c = vec2(-0.745, 0.186) + vec2(sin(t)*0.01, cos(t)*0.01); float iter = 0.0;
+                for(int i = 0; i < 50; i++) { z = vec2(z.x*z.x - z.y*z.y, 2.0*z.x*z.y) + c; if(dot(z,z) > 10.0) break; iter++; }
+                float n = pow(iter / 50.0, 0.5); vec3 col = mix(vec3(0.0), vec3(1.0, 0.0, 0.0), n*2.0);
+                col = mix(col, vec3(1.0, 0.5, 0.0), max(0.0, n*2.0 - 1.0)); col = mix(col, vec3(1.0, 1.0, 1.0), max(0.0, n*3.0 - 2.0));
+                col += vec3(1.0, 0.8, 0.2) * pow(0.05 / abs(sin(z.x * 5.0 + t * 10.0)), 1.5);
+                gl_FragColor = vec4(col, 1.0);
+            }`;
+
+        const fsSpasm = `
+            precision highp float; uniform vec2 u_resolution; uniform float u_time; uniform vec2 u_mouse;
+            void main() {
+                vec2 uv = (gl_FragCoord.xy * 2.0 - u_resolution.xy) / min(u_resolution.x, u_resolution.y); float t = u_time * 5.0; vec3 col = vec3(0.0);
+                ${MOUSE_DISTORTION}
+                for (int i = 1; i < 7; i++) {
+                    float fi = float(i); uv.x += sin(uv.y * 3.0 * fi + t) / fi; uv.y += cos(uv.x * 3.0 * fi - t) / fi;
+                    if (mod(t + fi, 3.0) < 0.5) uv = abs(uv) / dot(uv,uv) - vec2(0.5);
+                    float val = sin(uv.x * 10.0 + t) * cos(uv.y * 10.0 - t);
+                    col.r += sin(val * 5.0 + t * fi) * 0.2; col.g += cos(val * 6.0 - t * fi) * 0.2; col.b += sin(val * 7.0 + t * fi * 0.5) * 0.2;
+                }
+                col = pow(col * 0.5 + 0.5, vec3(3.0)) * 5.0; float split = sin(t * 20.0) * 0.1;
+                col.r *= sin(uv.x * 50.0 + t * 10.0) * 0.5 + 0.5; col.b *= cos((uv.y + split) * 50.0 - t * 10.0) * 0.5 + 0.5;
+                gl_FragColor = vec4(clamp(col, 0.0, 1.0), 1.0);
+            }`;
+
+        const hardcodedShaders = [
+            { title: "V O I D", fs: fsVoid }, { title: "F L E S H", fs: fsFlesh }, { title: "G R I D", fs: fsGrid }, { title: "M E L T", fs: fsMelt },
+            { title: "E Y E S", fs: fsEyes }, { title: "N E U R O N", fs: fsNeuron }, { title: "H E L L", fs: fsHell }, { title: "S P A S M", fs: fsSpasm }
+        ];
+
+        function generateSchizoShader(seed) {
+            let s = (seed * 1234567) ^ 0xDEADBEEF;
+            const rand = () => { s = Math.imul(s ^ (s >>> 15), 1 | s); s ^= s + Math.imul(s ^ (s >>> 7), 61 | s); return ((s ^ (s >>> 14)) >>> 0) / 4294967296; };
+            
+            const fStr = (v) => (v).toFixed(5);
+            const rVec3 = () => "vec3(" + fStr(rand()) + ", " + fStr(rand()) + ", " + fStr(rand()) + ")";
+            
+            const palA = rVec3(); const palB = rVec3(); const palD = rVec3();
+            const palC = "vec3(" + fStr(1.0 + rand()*2.0) + ", " + fStr(1.0 + rand()*2.0) + ", " + fStr(1.0 + rand()*2.0) + ")";
+            
+            const foldTypes = [
+                "uv = fract(uv * " + fStr(1.0 + rand() * 2.5) + ") - 0.5;",
+                "uv = abs(uv) - vec2(" + fStr(rand() * 1.5) + ", " + fStr(rand() * 1.5) + ");",
+                "uv = uv / dot(uv, uv) - vec2(" + fStr(rand() * 1.0) + ");",
+                "uv = fract(uv * " + fStr(1.0 + rand()) + ") - 0.5; uv = abs(uv) - " + fStr(rand()*0.5) + ";",
+                "uv *= 1.0 + " + fStr(rand()*0.2) + " * sin(t * " + fStr(rand()*5.0) + " + length(uv) * " + fStr(rand()*10.0) + ");"
+            ];
+            const rotMods = [
+                "t * " + fStr(rand() * 2.0),
+                "length(uv0) * " + fStr(rand() * 8.0),
+                "fi * " + fStr(rand() * 3.0),
+                "sin(t + length(uv) * " + fStr(rand()*5.0) + ")"
+            ];
+            
+            let loopInner = foldTypes[Math.floor(rand() * foldTypes.length)] + " ";
+            loopInner += "uv *= rot(" + rotMods[Math.floor(rand() * rotMods.length)] + " + " + rotMods[Math.floor(rand() * rotMods.length)] + "); ";
+            if (rand() > 0.5) loopInner += "uv.x += " + fStr(rand()*0.5) + " * sin(uv.y * " + fStr(rand()*15.0) + " + t); ";
+            if (rand() > 0.5) loopInner += "uv.y += " + fStr(rand()*0.5) + " * cos(uv.x * " + fStr(rand()*15.0) + " - t); ";
+            
+            const iterCount = Math.floor(5 + rand() * 20);
+            
+            return "" +
+                "precision highp float; uniform vec2 u_resolution; uniform float u_time; uniform vec2 u_mouse; " +
+                "vec3 palette( in float t, in vec3 a, in vec3 b, in vec3 c, in vec3 d ) { return a + b*cos( 6.28318*(c*t+d) ); } " +
+                "mat2 rot(float a) { float s = sin(a), c = cos(a); return mat2(c, -s, s, c); } " +
+                "void main() { " +
+                "    vec2 uv = (gl_FragCoord.xy * 2.0 - u_resolution.xy) / min(u_resolution.x, u_resolution.y); " +
+                "    vec2 mouse_uv = (u_mouse * 2.0 - u_resolution.xy) / min(u_resolution.x, u_resolution.y); " +
+                "    float m_dist = length(uv - mouse_uv); " +
+                "    uv -= (uv - mouse_uv) * smoothstep(0.8, 0.0, m_dist) * 0.3; " +
+                "    vec2 uv0 = uv; " +
+                "    float t = u_time * " + fStr(0.2 + rand() * 3.0) + "; " +
+                (rand() > 0.6 ? "    uv = floor(uv * " + fStr(5.0 + rand()*20.0) + ") / " + fStr(5.0 + rand()*20.0) + "; " : "") +
+                (rand() > 0.5 ? "    uv *= rot(t * " + fStr(rand()) + "); " : "") +
+                "    vec3 finalColor = vec3(0.0); " +
+                "    for(int i = 0; i < " + iterCount + "; i++) { " +
+                "        float fi = float(i); " +
+                "        " + loopInner + " " +
+                "        float d = length(uv) * exp(-length(uv0) * " + fStr(0.5 + rand()*1.5) + "); " +
+                "        vec3 col = palette(length(uv0) + fi*" + fStr(rand()) + " + t, " + palA + ", " + palB + ", " + palC + ", " + palD + "); " +
+                "        d = sin(d*" + fStr(2.0 + rand()*10.0) + " + t * " + fStr(rand()*5.0) + ")/" + fStr(2.0 + rand()*10.0) + "; " +
+                "        d = abs(d); d = pow(" + fStr(0.005 + rand()*0.02) + " / d, " + fStr(1.0 + rand()*0.5) + "); " +
+                "        finalColor += col * d; " +
+                "    } " +
+                "    gl_FragColor = vec4(clamp(finalColor, 0.0, 1.0), 1.0); " +
+                "}";
+        }
+
+        function generateTitle(seed) {
+            let s = (seed * 987654) ^ 0xABCDEF;
+            const rand = () => { s = Math.imul(s ^ (s >>> 15), 1 | s); s ^= s + Math.imul(s ^ (s >>> 7), 61 | s); return ((s ^ (s >>> 14)) >>> 0) / 4294967296; };
+            const prefixes = ["NEO", "CYBER", "VOID", "NULL", "FRACTAL", "ECHO", "XENO", "PARA", "HYPER", "OMNI", "DARK", "BLOOD", "GLITCH"];
+            const suffixes = ["MORPH", "CORE", "NET", "LITH", "SPASM", "PULSE", "TRANCE", "ROT", "DRIVE", "GEOM", "WAVE", "MIND"];
+            let title = (prefixes[Math.floor(rand() * prefixes.length)] + suffixes[Math.floor(rand() * suffixes.length)]).split('').join(' ');
+            if (rand() > 0.7) title += " " + Math.floor(rand()*100);
+            return title;
+        }
+
+        function createShader(gl, type, source) {
+            const shader = gl.createShader(type);
+            gl.shaderSource(shader, source);
+            gl.compileShader(shader);
+            if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+                console.error('Error compiling shader:', gl.getShaderInfoLog(shader));
+                gl.deleteShader(shader);
+                return null;
+            }
+            return shader;
+        }
+
+        const vertexShader = createShader(gl, gl.VERTEX_SHADER, vsSource);
+
+        const TOTAL_SLIDES = 500;
+        let compiledPrograms = new Array(TOTAL_SLIDES).fill(null);
+
+        function getProgram(index) {
+            if (compiledPrograms[index]) return compiledPrograms[index];
+            let fsSource, title;
+            if (index < hardcodedShaders.length) {
+                fsSource = hardcodedShaders[index].fs;
+                title = hardcodedShaders[index].title;
+            } else {
+                fsSource = generateSchizoShader(index);
+                title = generateTitle(index);
+            }
+            const fragmentShader = createShader(gl, gl.FRAGMENT_SHADER, fsSource);
+            if (!fragmentShader) return index === 0 ? null : getProgram(0);
+            
+            const program = gl.createProgram();
+            gl.attachShader(program, vertexShader);
+            gl.attachShader(program, fragmentShader);
+            gl.linkProgram(program);
+            
+            const pInfo = {
+                title: title,
+                program: program,
+                fsSource: fsSource,
+                timeLoc: gl.getUniformLocation(program, 'u_time'),
+                resLoc: gl.getUniformLocation(program, 'u_resolution'),
+                mouseLoc: gl.getUniformLocation(program, 'u_mouse'),
+                posAttr: gl.getAttribLocation(program, 'aVertexPosition')
+            };
+            compiledPrograms[index] = pInfo;
+            return pInfo;
+        }
+
+        const positionBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+        const positions = [ -1.0, -1.0, 1.0, -1.0, -1.0, 1.0, -1.0, 1.0, 1.0, -1.0, 1.0, 1.0 ];
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
+
+        let currentSlide = 0;
+        let mouseX = window.innerWidth / 2;
+        let mouseY = window.innerHeight / 2;
+        const overlay = document.getElementById('overlay');
+        const instructions = document.getElementById('instructions');
+
+        function updateUI() {
+            const pInfo = getProgram(currentSlide);
+            if (!pInfo) { overlay.innerText = "ERROR"; instructions.innerText = "Critical shader failure"; return; }
+            overlay.innerText = pInfo.title;
+            instructions.innerText = "◄ Traverse (Slide " + (currentSlide + 1) + "/" + TOTAL_SLIDES + ") ►";
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight') { currentSlide = (currentSlide + 1) % TOTAL_SLIDES; updateUI(); }
+            else if (e.key === 'ArrowLeft') { currentSlide = (currentSlide - 1 + TOTAL_SLIDES) % TOTAL_SLIDES; updateUI(); }
+        });
+
+        document.addEventListener('click', () => {
+            const pInfo = getProgram(currentSlide);
+            if(pInfo && pInfo.fsSource) {
+                // If it's a hardcoded shader, replace ${MOUSE_DISTORTION} string with the actual macro code
+                let sourceToCopy = pInfo.fsSource;
+                if(sourceToCopy.includes('${MOUSE_DISTORTION}')) {
+                    sourceToCopy = sourceToCopy.replace('${MOUSE_DISTORTION}', MOUSE_DISTORTION);
+                }
+                
+                navigator.clipboard.writeText(sourceToCopy).then(() => {
+                    const originalText = instructions.innerText;
+                    instructions.innerText = "SHADER COPIED TO CLIPBOARD!";
+                    setTimeout(() => { instructions.innerText = originalText; }, 1500);
+                }).catch(err => {
+                    console.error("Clipboard write failed", err);
+                });
+            }
+        });
+        
+        document.addEventListener('mousemove', (e) => {
+            mouseX = e.clientX;
+            mouseY = canvas.height - e.clientY;
+        });
+        document.addEventListener('touchmove', (e) => {
+            if(e.touches.length > 0) {
+                mouseX = e.touches[0].clientX;
+                mouseY = canvas.height - e.touches[0].clientY;
+            }
+        });
+
+        updateUI();
+
+        function resizeCanvasToDisplaySize(canvas) {
+            const displayWidth  = canvas.clientWidth;
+            const displayHeight = canvas.clientHeight;
+            if (canvas.width !== displayWidth || canvas.height !== displayHeight) {
+                canvas.width  = displayWidth;
+                canvas.height = displayHeight;
+            }
+        }
+
+        function render(time) {
+            time *= 0.001; 
+            const progInfo = getProgram(currentSlide);
+            if (progInfo) {
+                resizeCanvasToDisplaySize(canvas);
+                gl.viewport(0, 0, canvas.width, canvas.height);
+                gl.useProgram(progInfo.program);
+                gl.enableVertexAttribArray(progInfo.posAttr);
+                gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+                gl.vertexAttribPointer(progInfo.posAttr, 2, gl.FLOAT, false, 0, 0);
+                gl.uniform1f(progInfo.timeLoc, time);
+                gl.uniform2f(progInfo.resLoc, canvas.width, canvas.height);
+                gl.uniform2f(progInfo.mouseLoc, mouseX, mouseY);
+                gl.drawArrays(gl.TRIANGLES, 0, 6);
+            }
+            requestAnimationFrame(render);
+        }
+
+        requestAnimationFrame(render);
+    </script>
+</body>
+</html>
