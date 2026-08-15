@@ -9,8 +9,8 @@
         canvas { display: block; width: 100vw; height: 100vh; }
         #overlay { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #fff; font-size: 4rem; font-weight: bold; mix-blend-mode: exclusion; pointer-events: none; text-align: center; text-transform: uppercase; letter-spacing: 1rem; z-index: 10; animation: glitch 2s infinite linear alternate-reverse, pulse 4s infinite; white-space: nowrap; }
         #instructions { position: absolute; bottom: 90px; width: 100%; text-align: center; color: rgba(255, 255, 255, 0.4); font-size: 1.2rem; pointer-events: none; z-index: 10; letter-spacing: 0.2rem; text-transform: uppercase; }
-        #carousel { position: absolute; bottom: 20px; width: 100%; display: flex; justify-content: center; align-items: center; gap: 30px; pointer-events: auto; z-index: 20; overflow: hidden; padding: 20px 0; -webkit-mask-image: linear-gradient(to right, transparent, black 15%, black 85%, transparent); mask-image: linear-gradient(to right, transparent, black 15%, black 85%, transparent); }
-        .carousel-item { display: flex; flex-direction: column; align-items: center; color: rgba(255, 255, 255, 0.4); font-size: 1rem; cursor: pointer; transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94); white-space: nowrap; text-transform: uppercase; letter-spacing: 0.1rem; }
+        #carousel { position: absolute; bottom: 20px; width: 100%; height: 160px; pointer-events: auto; z-index: 20; overflow: hidden; -webkit-mask-image: linear-gradient(to right, transparent, black 15%, black 85%, transparent); mask-image: linear-gradient(to right, transparent, black 15%, black 85%, transparent); }
+        .carousel-item { position: absolute; left: 50%; top: 20px; display: flex; flex-direction: column; align-items: center; color: rgba(255, 255, 255, 0.4); font-size: 1rem; cursor: pointer; transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94); white-space: nowrap; text-transform: uppercase; letter-spacing: 0.1rem; transform-origin: center center; }
         .carousel-item:hover { color: rgba(255, 255, 255, 0.8); }
         .carousel-item.active { color: #fff; font-size: 1.4rem; font-weight: bold; text-shadow: 0 0 10px rgba(255,255,255,0.5), 2px 0 0 red, -2px 0 0 cyan; pointer-events: none; }
         .carousel-item canvas { width: 160px; height: 90px; border-radius: 4px; border: 2px solid transparent; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(0,0,0,0.5); display: block; margin-bottom: 8px; }
@@ -288,9 +288,10 @@
             return generateTitle(index);
         }
 
+        let previousSlide = 0;
         const carouselItems = [];
         const carouselContainer = document.getElementById('carousel');
-        for (let offset = -2; offset <= 2; offset++) {
+        for (let i = -3; i <= 3; i++) {
             const item = document.createElement('div');
             item.className = 'carousel-item';
             
@@ -311,35 +312,67 @@
                 canvas: previewCanvas,
                 gl: ctxGl,
                 cache: new Array(TOTAL_SLIDES).fill(null),
-                offset: offset,
+                offset: i,
                 titleDiv: title,
                 targetIdx: 0
             };
             
             item.addEventListener('click', () => {
-                currentSlide = (currentSlide + offset + TOTAL_SLIDES) % TOTAL_SLIDES;
-                updateUI();
+                if (carouselItem.offset !== 0) {
+                    currentSlide = (currentSlide + carouselItem.offset + TOTAL_SLIDES) % TOTAL_SLIDES;
+                    updateUI();
+                }
             });
             carouselItems.push(carouselItem);
         }
 
-        function updateCarousel() {
+        function updateCarousel(instant = false) {
+            let delta = currentSlide - previousSlide;
+            if (delta > TOTAL_SLIDES / 2) delta -= TOTAL_SLIDES;
+            if (delta < -TOTAL_SLIDES / 2) delta += TOTAL_SLIDES;
+            
+            const isLargeJump = Math.abs(delta) > 3 || instant;
+
             carouselItems.forEach(item => {
-                const idx = (currentSlide + item.offset + TOTAL_SLIDES) % TOTAL_SLIDES;
-                item.targetIdx = idx;
-                item.titleDiv.innerText = getTitle(idx);
-                
-                const dist = Math.abs(item.offset);
-                if (dist === 0) {
+                let newOffset;
+                let didWrap = false;
+
+                if (isLargeJump) {
+                    newOffset = item.offset;
+                    didWrap = true;
+                } else {
+                    newOffset = item.offset - delta;
+                    if (newOffset < -3) { newOffset += 7; didWrap = true; }
+                    else if (newOffset > 3) { newOffset -= 7; didWrap = true; }
+                }
+
+                const dist = Math.abs(newOffset);
+                const transformStr = `translate(calc(-50% + ${newOffset * 190}px), 0) scale(${1 - dist * 0.15})`;
+                const opacityStr = Math.max(0.0, 1.0 - dist * 0.35);
+
+                if (didWrap) {
+                    item.element.style.transition = 'none';
+                    item.element.style.transform = transformStr;
+                    item.element.style.opacity = opacityStr;
+                    void item.element.offsetWidth; // Force reflow
+                    
+                    const idx = (currentSlide + newOffset + TOTAL_SLIDES) % TOTAL_SLIDES;
+                    item.targetIdx = idx;
+                    item.titleDiv.innerText = getTitle(idx);
+                }
+
+                item.element.style.transition = 'all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+                item.element.style.transform = transformStr;
+                item.element.style.opacity = opacityStr;
+                item.offset = newOffset;
+
+                if (newOffset === 0) {
                     item.element.classList.add('active');
-                    item.element.style.opacity = 1;
-                    item.element.style.transform = 'scale(1)';
                 } else {
                     item.element.classList.remove('active');
-                    item.element.style.opacity = Math.max(0.3, 1.0 - dist * 0.3);
-                    item.element.style.transform = `scale(${1 - dist * 0.1})`;
                 }
             });
+            previousSlide = currentSlide;
         }
 
         function getProgram(glCtx, cache, index) {
@@ -388,12 +421,12 @@
         const overlay = document.getElementById('overlay');
         const instructions = document.getElementById('instructions');
 
-        function updateUI() {
+        function updateUI(instant = false) {
             const pInfo = getProgram(gl, mainCache, currentSlide);
             if (!pInfo) { overlay.innerText = "ERROR"; instructions.innerText = "Critical shader failure"; return; }
             overlay.innerText = pInfo.title;
             instructions.innerText = "◄ Traverse (Slide " + (currentSlide + 1) + "/" + TOTAL_SLIDES + ") ►";
-            updateCarousel();
+            updateCarousel(instant);
         }
 
         document.addEventListener('keydown', (e) => {
@@ -432,7 +465,7 @@
             }
         });
 
-        updateUI();
+        updateUI(true);
 
         function resizeCanvasToDisplaySize(canvas) {
             const displayWidth  = canvas.clientWidth;
