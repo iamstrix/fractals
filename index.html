@@ -8,7 +8,15 @@
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #000; font-family: 'Courier New', Courier, monospace; }
         canvas { display: block; width: 100vw; height: 100vh; }
         #overlay { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #fff; font-size: 4rem; font-weight: bold; mix-blend-mode: exclusion; pointer-events: none; text-align: center; text-transform: uppercase; letter-spacing: 1rem; z-index: 10; animation: glitch 2s infinite linear alternate-reverse, pulse 4s infinite; white-space: nowrap; }
-        #instructions { position: absolute; bottom: 30px; width: 100%; text-align: center; color: rgba(255, 255, 255, 0.4); font-size: 1.2rem; pointer-events: none; z-index: 10; letter-spacing: 0.2rem; text-transform: uppercase; }
+        #instructions { position: absolute; bottom: 90px; width: 100%; text-align: center; color: rgba(255, 255, 255, 0.4); font-size: 1.2rem; pointer-events: none; z-index: 10; letter-spacing: 0.2rem; text-transform: uppercase; }
+        #carousel { position: absolute; bottom: 20px; width: 100%; display: flex; justify-content: center; align-items: center; gap: 30px; pointer-events: auto; z-index: 20; overflow: hidden; padding: 20px 0; -webkit-mask-image: linear-gradient(to right, transparent, black 15%, black 85%, transparent); mask-image: linear-gradient(to right, transparent, black 15%, black 85%, transparent); }
+        .carousel-item { display: flex; flex-direction: column; align-items: center; color: rgba(255, 255, 255, 0.4); font-size: 1rem; cursor: pointer; transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94); white-space: nowrap; text-transform: uppercase; letter-spacing: 0.1rem; }
+        .carousel-item:hover { color: rgba(255, 255, 255, 0.8); }
+        .carousel-item.active { color: #fff; font-size: 1.4rem; font-weight: bold; text-shadow: 0 0 10px rgba(255,255,255,0.5), 2px 0 0 red, -2px 0 0 cyan; pointer-events: none; }
+        .carousel-item canvas { width: 160px; height: 90px; border-radius: 4px; border: 2px solid transparent; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(0,0,0,0.5); display: block; margin-bottom: 8px; }
+        .carousel-item:hover canvas { border-color: rgba(255,255,255,0.5); transform: translateY(-5px); }
+        .carousel-item.active canvas { border-color: #fff; transform: scale(1.1); box-shadow: 0 0 20px rgba(255,255,255,0.4), 0 0 10px red, 0 0 10px cyan; }
+        .car-title { text-align: center; }
         @keyframes glitch {
             0% { text-shadow: 5px 0 0 red, -5px 0 0 cyan; transform: translate(-50%, -50%) skewX(0deg); }
             5% { text-shadow: -5px 0 0 red, 5px 0 0 cyan; transform: translate(-50%, -50%) skewX(15deg); }
@@ -23,6 +31,7 @@
 <body>
     <div id="overlay">V O I D</div>
     <div id="instructions">◄ Left / Right Arrows to Traverse ►</div>
+    <div id="carousel"></div>
     <canvas id="glcanvas"></canvas>
     
     <script>
@@ -270,13 +279,71 @@
             return shader;
         }
 
-        const vertexShader = createShader(gl, gl.VERTEX_SHADER, vsSource);
-
         const TOTAL_SLIDES = 500;
-        let compiledPrograms = new Array(TOTAL_SLIDES).fill(null);
+        const mainCache = new Array(TOTAL_SLIDES).fill(null);
 
-        function getProgram(index) {
-            if (compiledPrograms[index]) return compiledPrograms[index];
+        function getTitle(index) {
+            index = (index + TOTAL_SLIDES) % TOTAL_SLIDES;
+            if (index < hardcodedShaders.length) return hardcodedShaders[index].title;
+            return generateTitle(index);
+        }
+
+        const carouselItems = [];
+        const carouselContainer = document.getElementById('carousel');
+        for (let offset = -2; offset <= 2; offset++) {
+            const item = document.createElement('div');
+            item.className = 'carousel-item';
+            
+            const previewCanvas = document.createElement('canvas');
+            previewCanvas.width = 160;
+            previewCanvas.height = 90;
+            const ctxGl = previewCanvas.getContext('webgl') || previewCanvas.getContext('experimental-webgl');
+            
+            const title = document.createElement('div');
+            title.className = 'car-title';
+            
+            item.appendChild(previewCanvas);
+            item.appendChild(title);
+            carouselContainer.appendChild(item);
+            
+            const carouselItem = {
+                element: item,
+                canvas: previewCanvas,
+                gl: ctxGl,
+                cache: new Array(TOTAL_SLIDES).fill(null),
+                offset: offset,
+                titleDiv: title,
+                targetIdx: 0
+            };
+            
+            item.addEventListener('click', () => {
+                currentSlide = (currentSlide + offset + TOTAL_SLIDES) % TOTAL_SLIDES;
+                updateUI();
+            });
+            carouselItems.push(carouselItem);
+        }
+
+        function updateCarousel() {
+            carouselItems.forEach(item => {
+                const idx = (currentSlide + item.offset + TOTAL_SLIDES) % TOTAL_SLIDES;
+                item.targetIdx = idx;
+                item.titleDiv.innerText = getTitle(idx);
+                
+                const dist = Math.abs(item.offset);
+                if (dist === 0) {
+                    item.element.classList.add('active');
+                    item.element.style.opacity = 1;
+                    item.element.style.transform = 'scale(1)';
+                } else {
+                    item.element.classList.remove('active');
+                    item.element.style.opacity = Math.max(0.3, 1.0 - dist * 0.3);
+                    item.element.style.transform = `scale(${1 - dist * 0.1})`;
+                }
+            });
+        }
+
+        function getProgram(glCtx, cache, index) {
+            if (cache[index]) return cache[index];
             let fsSource, title;
             if (index < hardcodedShaders.length) {
                 fsSource = hardcodedShaders[index].fs;
@@ -285,31 +352,35 @@
                 fsSource = generateSchizoShader(index);
                 title = generateTitle(index);
             }
-            const fragmentShader = createShader(gl, gl.FRAGMENT_SHADER, fsSource);
-            if (!fragmentShader) return index === 0 ? null : getProgram(0);
+
+            if (!glCtx.vertexShader) {
+                glCtx.vertexShader = createShader(glCtx, glCtx.VERTEX_SHADER, vsSource);
+                glCtx.positionBuffer = glCtx.createBuffer();
+                glCtx.bindBuffer(glCtx.ARRAY_BUFFER, glCtx.positionBuffer);
+                const positions = [ -1.0, -1.0, 1.0, -1.0, -1.0, 1.0, -1.0, 1.0, 1.0, -1.0, 1.0, 1.0 ];
+                glCtx.bufferData(glCtx.ARRAY_BUFFER, new Float32Array(positions), glCtx.STATIC_DRAW);
+            }
+
+            const fragmentShader = createShader(glCtx, glCtx.FRAGMENT_SHADER, fsSource);
+            if (!fragmentShader) return index === 0 ? null : getProgram(glCtx, cache, 0);
             
-            const program = gl.createProgram();
-            gl.attachShader(program, vertexShader);
-            gl.attachShader(program, fragmentShader);
-            gl.linkProgram(program);
+            const program = glCtx.createProgram();
+            glCtx.attachShader(program, glCtx.vertexShader);
+            glCtx.attachShader(program, fragmentShader);
+            glCtx.linkProgram(program);
             
             const pInfo = {
                 title: title,
                 program: program,
                 fsSource: fsSource,
-                timeLoc: gl.getUniformLocation(program, 'u_time'),
-                resLoc: gl.getUniformLocation(program, 'u_resolution'),
-                mouseLoc: gl.getUniformLocation(program, 'u_mouse'),
-                posAttr: gl.getAttribLocation(program, 'aVertexPosition')
+                timeLoc: glCtx.getUniformLocation(program, 'u_time'),
+                resLoc: glCtx.getUniformLocation(program, 'u_resolution'),
+                mouseLoc: glCtx.getUniformLocation(program, 'u_mouse'),
+                posAttr: glCtx.getAttribLocation(program, 'aVertexPosition')
             };
-            compiledPrograms[index] = pInfo;
+            cache[index] = pInfo;
             return pInfo;
         }
-
-        const positionBuffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-        const positions = [ -1.0, -1.0, 1.0, -1.0, -1.0, 1.0, -1.0, 1.0, 1.0, -1.0, 1.0, 1.0 ];
-        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
 
         let currentSlide = 0;
         let mouseX = window.innerWidth / 2;
@@ -318,10 +389,11 @@
         const instructions = document.getElementById('instructions');
 
         function updateUI() {
-            const pInfo = getProgram(currentSlide);
+            const pInfo = getProgram(gl, mainCache, currentSlide);
             if (!pInfo) { overlay.innerText = "ERROR"; instructions.innerText = "Critical shader failure"; return; }
             overlay.innerText = pInfo.title;
             instructions.innerText = "◄ Traverse (Slide " + (currentSlide + 1) + "/" + TOTAL_SLIDES + ") ►";
+            updateCarousel();
         }
 
         document.addEventListener('keydown', (e) => {
@@ -329,8 +401,9 @@
             else if (e.key === 'ArrowLeft') { currentSlide = (currentSlide - 1 + TOTAL_SLIDES) % TOTAL_SLIDES; updateUI(); }
         });
 
-        document.addEventListener('click', () => {
-            const pInfo = getProgram(currentSlide);
+        document.addEventListener('click', (e) => {
+            if (e.target.closest('#carousel')) return;
+            const pInfo = getProgram(gl, mainCache, currentSlide);
             if(pInfo && pInfo.fsSource) {
                 // If it's a hardcoded shader, replace ${MOUSE_DISTORTION} string with the actual macro code
                 let sourceToCopy = pInfo.fsSource;
@@ -372,19 +445,36 @@
 
         function render(time) {
             time *= 0.001; 
-            const progInfo = getProgram(currentSlide);
+            const progInfo = getProgram(gl, mainCache, currentSlide);
             if (progInfo) {
                 resizeCanvasToDisplaySize(canvas);
                 gl.viewport(0, 0, canvas.width, canvas.height);
                 gl.useProgram(progInfo.program);
+                gl.bindBuffer(gl.ARRAY_BUFFER, gl.positionBuffer);
                 gl.enableVertexAttribArray(progInfo.posAttr);
-                gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
                 gl.vertexAttribPointer(progInfo.posAttr, 2, gl.FLOAT, false, 0, 0);
                 gl.uniform1f(progInfo.timeLoc, time);
                 gl.uniform2f(progInfo.resLoc, canvas.width, canvas.height);
                 gl.uniform2f(progInfo.mouseLoc, mouseX, mouseY);
                 gl.drawArrays(gl.TRIANGLES, 0, 6);
             }
+
+            carouselItems.forEach(item => {
+                if (item.targetIdx === undefined || !item.gl) return;
+                const pInfo = getProgram(item.gl, item.cache, item.targetIdx);
+                if (pInfo) {
+                    item.gl.viewport(0, 0, item.canvas.width, item.canvas.height);
+                    item.gl.useProgram(pInfo.program);
+                    item.gl.bindBuffer(item.gl.ARRAY_BUFFER, item.gl.positionBuffer);
+                    item.gl.enableVertexAttribArray(pInfo.posAttr);
+                    item.gl.vertexAttribPointer(pInfo.posAttr, 2, item.gl.FLOAT, false, 0, 0);
+                    item.gl.uniform1f(pInfo.timeLoc, time);
+                    item.gl.uniform2f(pInfo.resLoc, item.canvas.width, item.canvas.height);
+                    item.gl.uniform2f(pInfo.mouseLoc, item.canvas.width/2, item.canvas.height/2);
+                    item.gl.drawArrays(item.gl.TRIANGLES, 0, 6);
+                }
+            });
+
             requestAnimationFrame(render);
         }
 
