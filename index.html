@@ -7,16 +7,16 @@
     <style>
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #000; font-family: 'Courier New', Courier, monospace; }
         canvas { display: block; width: 100vw; height: 100vh; }
-        #overlay { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #fff; font-size: 4rem; font-weight: bold; mix-blend-mode: exclusion; pointer-events: none; text-align: center; text-transform: uppercase; letter-spacing: 1rem; z-index: 10; animation: glitch 2s infinite linear alternate-reverse, pulse 4s infinite; white-space: nowrap; }
+        #overlay { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #fff; font-size: 4rem; font-weight: bold; mix-blend-mode: exclusion; pointer-events: none; text-align: center; text-transform: uppercase; letter-spacing: 1rem; z-index: 10; animation: glitch 2s infinite linear alternate-reverse; white-space: nowrap; }
         #instructions { position: absolute; bottom: 90px; width: 100%; text-align: center; color: rgba(255, 255, 255, 0.4); font-size: 1.2rem; pointer-events: none; z-index: 10; letter-spacing: 0.2rem; text-transform: uppercase; }
         #carousel { position: absolute; bottom: 20px; width: 100%; height: 160px; pointer-events: auto; z-index: 20; overflow: hidden; -webkit-mask-image: linear-gradient(to right, transparent, black 15%, black 85%, transparent); mask-image: linear-gradient(to right, transparent, black 15%, black 85%, transparent); }
         .carousel-item { position: absolute; left: 50%; top: 20px; display: flex; flex-direction: column; align-items: center; color: rgba(255, 255, 255, 0.4); font-size: 1rem; cursor: pointer; transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94); white-space: nowrap; text-transform: uppercase; letter-spacing: 0.1rem; transform-origin: center center; }
         .carousel-item:hover { color: rgba(255, 255, 255, 0.8); }
-        .carousel-item.active { color: #fff; font-size: 1.4rem; font-weight: bold; text-shadow: 0 0 10px rgba(255,255,255,0.5), 2px 0 0 red, -2px 0 0 cyan; pointer-events: none; }
+        .carousel-item.active { color: #fff; font-weight: bold; text-shadow: 0 0 10px rgba(255,255,255,0.5), 2px 0 0 red, -2px 0 0 cyan; pointer-events: none; }
         .carousel-item canvas { width: 160px; height: 90px; border-radius: 4px; border: 2px solid transparent; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(0,0,0,0.5); display: block; margin-bottom: 8px; }
-        .carousel-item:hover canvas { border-color: rgba(255,255,255,0.5); transform: translateY(-5px); }
-        .carousel-item.active canvas { border-color: #fff; transform: scale(1.1); box-shadow: 0 0 20px rgba(255,255,255,0.4), 0 0 10px red, 0 0 10px cyan; }
-        .car-title { text-align: center; }
+        .carousel-item:hover canvas { border-color: rgba(255,255,255,0.5); }
+        .carousel-item.active canvas { border-color: #fff; box-shadow: 0 0 20px rgba(255,255,255,0.4), 0 0 10px red, 0 0 10px cyan; }
+        .car-title { text-align: center; font-size: 0.95rem; }
         
         #fav-btn { position: absolute; top: 20px; right: 30px; font-size: 2.5rem; color: rgba(255,255,255,0.3); cursor: pointer; z-index: 30; transition: all 0.3s; user-select: none; }
         #fav-btn:hover { color: rgba(255,255,255,0.8); transform: scale(1.1); }
@@ -92,7 +92,6 @@
             95% { text-shadow: 5px 0 0 red, -5px 0 0 cyan; transform: translate(-50%, -50%) skewX(0deg); }
             100% { text-shadow: -8px 5px 0 red, 8px -5px 0 cyan; transform: translate(-50%, -50%) skewX(5deg); }
         }
-        @keyframes pulse { 0% { opacity: 0.8; scale: 1; } 50% { opacity: 1; scale: 1.1; } 100% { opacity: 0.8; scale: 1; } }
     </style>
 </head>
 <body>
@@ -134,20 +133,12 @@
             void main() { gl_Position = aVertexPosition; }
         `;
 
-        // Mouse distortion macro injected into all shaders
-        const MOUSE_DISTORTION = `
-            vec2 mouse_uv = (u_mouse * 2.0 - u_resolution.xy) / min(u_resolution.x, u_resolution.y);
-            float m_dist = length(uv - mouse_uv);
-            uv -= (uv - mouse_uv) * smoothstep(0.8, 0.0, m_dist) * 0.3;
-        `;
-
         const fsVoid = `
-            precision highp float; uniform vec2 u_resolution; uniform float u_time; uniform vec2 u_mouse;
+            precision highp float; uniform vec2 u_resolution; uniform float u_time;
             vec3 palette( in float t, in vec3 a, in vec3 b, in vec3 c, in vec3 d ) { return a + b*cos( 6.28318*(c*t+d) ); }
             mat2 rot(float a) { float s = sin(a), c = cos(a); return mat2(c, -s, s, c); }
             void main() {
                 vec2 uv = (gl_FragCoord.xy * 2.0 - u_resolution.xy) / min(u_resolution.x, u_resolution.y);
-                ${MOUSE_DISTORTION}
                 vec2 uv0 = uv; vec3 finalColor = vec3(0.0); float t = u_time * 0.6;
                 uv *= rot(sin(t * 0.2) * 0.5); uv += vec2(sin(t * 0.3), cos(t * 0.4)) * 0.2;
                 for (int i = 0; i < 5; i++) {
@@ -161,7 +152,7 @@
             }`;
 
         const fsFlesh = `
-            precision highp float; uniform vec2 u_resolution; uniform float u_time; uniform vec2 u_mouse;
+            precision highp float; uniform vec2 u_resolution; uniform float u_time;
             mat2 rot(float a) { float s = sin(a), c = cos(a); return mat2(c, -s, s, c); }
             vec2 hash( vec2 p ) { p = vec2( dot(p,vec2(127.1,311.7)), dot(p,vec2(269.5,183.3)) ); return -1.0 + 2.0*fract(sin(p)*43758.5453123); }
             float noise( in vec2 p ) {
@@ -172,7 +163,6 @@
             }
             void main() {
                 vec2 uv = (gl_FragCoord.xy * 2.0 - u_resolution.xy) / min(u_resolution.x, u_resolution.y); float t = u_time * 0.5;
-                ${MOUSE_DISTORTION}
                 uv *= 1.0 + 0.1 * sin(t * 3.0 + length(uv) * 4.0); uv *= rot(noise(uv * 2.0 + t) * 0.4);
                 vec2 z = uv; float iter = 0.0;
                 for(int i = 0; i < 40; i++) {
@@ -186,11 +176,10 @@
             }`;
 
         const fsGrid = `
-            precision highp float; uniform vec2 u_resolution; uniform float u_time; uniform vec2 u_mouse;
+            precision highp float; uniform vec2 u_resolution; uniform float u_time;
             mat2 rot(float a) { float s = sin(a), c = cos(a); return mat2(c, -s, s, c); }
             void main() {
                 vec2 uv = (gl_FragCoord.xy * 2.0 - u_resolution.xy) / min(u_resolution.x, u_resolution.y); float t = u_time * 1.5;
-                ${MOUSE_DISTORTION}
                 float quant = 10.0 + floor(100.0 * pow(sin(t*0.5)*0.5+0.5, 6.0)); vec2 p_uv = floor(uv * quant) / quant;
                 vec3 col = vec3(0.0); vec2 z = p_uv;
                 for(int i = 0; i < 8; i++) {
@@ -205,11 +194,10 @@
             }`;
 
         const fsMelt = `
-            precision highp float; uniform vec2 u_resolution; uniform float u_time; uniform vec2 u_mouse;
+            precision highp float; uniform vec2 u_resolution; uniform float u_time;
             vec3 hsv2rgb(vec3 c) { vec4 K = vec4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0); vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www); return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y); }
             void main() {
                 vec2 uv = (gl_FragCoord.xy * 2.0 - u_resolution.xy) / min(u_resolution.x, u_resolution.y); float t = u_time * 2.0;
-                ${MOUSE_DISTORTION}
                 for(int i = 1; i <= 5; i++) { float fi = float(i); vec2 p = uv; p.x += 0.3 / fi * sin(fi * 3.0 * uv.y + t) + t * 0.1; p.y += 0.3 / fi * cos(fi * 3.0 * uv.x + t) - t * 0.1; uv = p; }
                 float r = length(uv); float hue = r * 0.5 + t * 0.3 + sin(atan(uv.y, uv.x) * 5.0 + t);
                 vec3 col = hsv2rgb(vec3(hue, 1.0, 1.0)); col *= (0.5 + 0.5 * sin(r * 20.0 - t * 10.0));
@@ -218,11 +206,10 @@
             }`;
 
         const fsEyes = `
-            precision highp float; uniform vec2 u_resolution; uniform float u_time; uniform vec2 u_mouse;
+            precision highp float; uniform vec2 u_resolution; uniform float u_time;
             vec2 hash2( vec2 p ) { return fract(sin(vec2(dot(p,vec2(127.1,311.7)),dot(p,vec2(269.5,183.3))))*43758.5453); }
             void main() {
                 vec2 uv = (gl_FragCoord.xy * 2.0 - u_resolution.xy) / min(u_resolution.x, u_resolution.y); float t = u_time * 3.0;
-                ${MOUSE_DISTORTION}
                 uv *= 2.0 + sin(t*0.5); uv.x += sin(t * 10.0) * 0.05; uv.y += cos(t * 8.0) * 0.05;
                 vec2 p = floor(uv * 5.0); vec2 f = fract(uv * 5.0); float min_dist = 1.0; vec2 closest_point;
                 for (int y = -1; y <= 1; y++) {
@@ -239,11 +226,10 @@
             }`;
 
         const fsNeuron = `
-            precision highp float; uniform vec2 u_resolution; uniform float u_time; uniform vec2 u_mouse;
+            precision highp float; uniform vec2 u_resolution; uniform float u_time;
             mat2 rot(float a) { float s = sin(a), c = cos(a); return mat2(c, -s, s, c); }
             void main() {
                 vec2 uv = (gl_FragCoord.xy * 2.0 - u_resolution.xy) / min(u_resolution.x, u_resolution.y); float t = u_time * 1.2;
-                ${MOUSE_DISTORTION}
                 vec3 col = vec3(0.0); vec2 z = uv;
                 for (int i = 0; i < 6; i++) {
                     float fi = float(i); z = abs(z) - vec2(0.5 + 0.2*sin(t*2.0)); z *= rot(t * 0.5 + fi * 1.5 + sin(t*5.0)*0.2); z *= 1.4;
@@ -253,11 +239,10 @@
             }`;
 
         const fsHell = `
-            precision highp float; uniform vec2 u_resolution; uniform float u_time; uniform vec2 u_mouse;
+            precision highp float; uniform vec2 u_resolution; uniform float u_time;
             mat2 rot(float a) { float s = sin(a), c = cos(a); return mat2(c, -s, s, c); }
             void main() {
                 vec2 uv = (gl_FragCoord.xy * 2.0 - u_resolution.xy) / min(u_resolution.x, u_resolution.y); float t = u_time * 2.5;
-                ${MOUSE_DISTORTION}
                 uv *= 1.5 + sin(t)*0.5; uv += vec2(sin(t*0.5), t*0.8); uv *= rot(sin(t * 0.3));
                 uv.x += 0.2 * sin(uv.y * 10.0 - t * 5.0); uv.y += 0.2 * cos(uv.x * 10.0 + t * 4.0);
                 vec2 z = uv; vec2 c = vec2(-0.745, 0.186) + vec2(sin(t)*0.01, cos(t)*0.01); float iter = 0.0;
@@ -269,10 +254,9 @@
             }`;
 
         const fsSpasm = `
-            precision highp float; uniform vec2 u_resolution; uniform float u_time; uniform vec2 u_mouse;
+            precision highp float; uniform vec2 u_resolution; uniform float u_time;
             void main() {
                 vec2 uv = (gl_FragCoord.xy * 2.0 - u_resolution.xy) / min(u_resolution.x, u_resolution.y); float t = u_time * 5.0; vec3 col = vec3(0.0);
-                ${MOUSE_DISTORTION}
                 for (int i = 1; i < 7; i++) {
                     float fi = float(i); uv.x += sin(uv.y * 3.0 * fi + t) / fi; uv.y += cos(uv.x * 3.0 * fi - t) / fi;
                     if (mod(t + fi, 3.0) < 0.5) uv = abs(uv) / dot(uv,uv) - vec2(0.5);
@@ -321,14 +305,11 @@
             const iterCount = Math.floor(5 + rand() * 20);
             
             return "" +
-                "precision highp float; uniform vec2 u_resolution; uniform float u_time; uniform vec2 u_mouse; " +
+                "precision highp float; uniform vec2 u_resolution; uniform float u_time; " +
                 "vec3 palette( in float t, in vec3 a, in vec3 b, in vec3 c, in vec3 d ) { return a + b*cos( 6.28318*(c*t+d) ); } " +
                 "mat2 rot(float a) { float s = sin(a), c = cos(a); return mat2(c, -s, s, c); } " +
                 "void main() { " +
                 "    vec2 uv = (gl_FragCoord.xy * 2.0 - u_resolution.xy) / min(u_resolution.x, u_resolution.y); " +
-                "    vec2 mouse_uv = (u_mouse * 2.0 - u_resolution.xy) / min(u_resolution.x, u_resolution.y); " +
-                "    float m_dist = length(uv - mouse_uv); " +
-                "    uv -= (uv - mouse_uv) * smoothstep(0.8, 0.0, m_dist) * 0.3; " +
                 "    vec2 uv0 = uv; " +
                 "    float t = u_time * " + fStr(0.2 + rand() * 3.0) + "; " +
                 (rand() > 0.6 ? "    uv = floor(uv * " + fStr(5.0 + rand()*20.0) + ") / " + fStr(5.0 + rand()*20.0) + "; " : "") +
@@ -437,7 +418,7 @@
                 }
 
                 const dist = Math.abs(newOffset);
-                const transformStr = `translate(calc(-50% + ${newOffset * 190}px), 0) scale(${1 - dist * 0.15})`;
+                const transformStr = `translate(calc(-50% + ${newOffset * 190}px), 0)`;
                 const opacityStr = Math.max(0.0, 1.0 - dist * 0.35);
 
                 if (didWrap) {
@@ -498,7 +479,6 @@
                 fsSource: fsSource,
                 timeLoc: glCtx.getUniformLocation(program, 'u_time'),
                 resLoc: glCtx.getUniformLocation(program, 'u_resolution'),
-                mouseLoc: glCtx.getUniformLocation(program, 'u_mouse'),
                 posAttr: glCtx.getAttribLocation(program, 'aVertexPosition')
             };
             cache[index] = pInfo;
@@ -506,8 +486,6 @@
         }
 
         let currentSlide = 0;
-        let mouseX = window.innerWidth / 2;
-        let mouseY = window.innerHeight / 2;
         const overlay = document.getElementById('overlay');
         const instructions = document.getElementById('instructions');
         
@@ -534,30 +512,13 @@
             if (e.target.closest('#carousel') || e.target.closest('#fav-panel') || e.target.closest('#fav-tab-btn') || e.target.closest('#fav-btn') || e.target.closest('#speed-control') || e.target.closest('input')) return;
             const pInfo = temporaryFavoriteOverride || getProgram(gl, mainCache, currentSlide);
             if(pInfo && pInfo.fsSource) {
-                // If it's a hardcoded shader, replace ${MOUSE_DISTORTION} string with the actual macro code
-                let sourceToCopy = pInfo.fsSource;
-                if(sourceToCopy.includes('${MOUSE_DISTORTION}')) {
-                    sourceToCopy = sourceToCopy.replace('${MOUSE_DISTORTION}', MOUSE_DISTORTION);
-                }
-                
-                navigator.clipboard.writeText(sourceToCopy).then(() => {
+                navigator.clipboard.writeText(pInfo.fsSource).then(() => {
                     const originalText = instructions.innerText;
                     instructions.innerText = "SHADER COPIED TO CLIPBOARD!";
                     setTimeout(() => { instructions.innerText = originalText; }, 1500);
                 }).catch(err => {
                     console.error("Clipboard write failed", err);
                 });
-            }
-        });
-        
-        document.addEventListener('mousemove', (e) => {
-            mouseX = e.clientX;
-            mouseY = canvas.height - e.clientY;
-        });
-        document.addEventListener('touchmove', (e) => {
-            if(e.touches.length > 0) {
-                mouseX = e.touches[0].clientX;
-                mouseY = canvas.height - e.touches[0].clientY;
             }
         });
 
@@ -573,16 +534,11 @@
             const pInfo = temporaryFavoriteOverride || getProgram(gl, mainCache, currentSlide);
             if (!pInfo) return;
             
-            let sourceToSave = pInfo.fsSource;
-            if(sourceToSave.includes('${MOUSE_DISTORTION}')) {
-                sourceToSave = sourceToSave.replace('${MOUSE_DISTORTION}', MOUSE_DISTORTION);
-            }
-            
             const existingIdx = favorites.findIndex(f => f.title === pInfo.title);
             if (existingIdx >= 0) {
                 favorites.splice(existingIdx, 1);
             } else {
-                favorites.push({ title: pInfo.title, fsSource: sourceToSave });
+                favorites.push({ title: pInfo.title, fsSource: pInfo.fsSource });
             }
             saveFavorites();
             updateFavButton();
@@ -628,7 +584,6 @@
                 fsSource: fav.fsSource,
                 timeLoc: gl.getUniformLocation(program, 'u_time'),
                 resLoc: gl.getUniformLocation(program, 'u_resolution'),
-                mouseLoc: gl.getUniformLocation(program, 'u_mouse'),
                 posAttr: gl.getAttribLocation(program, 'aVertexPosition')
             };
             
@@ -743,7 +698,6 @@
                 gl.vertexAttribPointer(progInfo.posAttr, 2, gl.FLOAT, false, 0, 0);
                 gl.uniform1f(progInfo.timeLoc, globalTime);
                 gl.uniform2f(progInfo.resLoc, canvas.width, canvas.height);
-                gl.uniform2f(progInfo.mouseLoc, mouseX, mouseY);
                 gl.drawArrays(gl.TRIANGLES, 0, 6);
             }
 
@@ -758,7 +712,6 @@
                     item.gl.vertexAttribPointer(pInfo.posAttr, 2, item.gl.FLOAT, false, 0, 0);
                     item.gl.uniform1f(pInfo.timeLoc, globalTime);
                     item.gl.uniform2f(pInfo.resLoc, item.canvas.width, item.canvas.height);
-                    item.gl.uniform2f(pInfo.mouseLoc, item.canvas.width/2, item.canvas.height/2);
                     item.gl.drawArrays(item.gl.TRIANGLES, 0, 6);
                 }
             });
