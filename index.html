@@ -25,6 +25,10 @@
         #fav-tab-btn { position: absolute; top: 30px; left: 30px; font-size: 1.2rem; color: rgba(255,255,255,0.5); cursor: pointer; z-index: 30; transition: all 0.3s; text-transform: uppercase; letter-spacing: 0.1rem; user-select: none; border: 1px solid rgba(255,255,255,0.3); padding: 8px 16px; border-radius: 4px; }
         #fav-tab-btn:hover { color: #fff; border-color: #fff; background: rgba(255,255,255,0.1); }
 
+        #speed-control { position: absolute; bottom: 30px; right: 30px; display: flex; flex-direction: column; align-items: flex-end; color: rgba(255,255,255,0.5); font-size: 0.9rem; z-index: 30; user-select: none; }
+        #speed-control label { margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.1rem; }
+        #speed-slider { width: 120px; cursor: pointer; accent-color: #fff; }
+
         #fav-panel { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.85); backdrop-filter: blur(10px); z-index: 50; display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.4s ease; }
         #fav-panel.open { opacity: 1; pointer-events: auto; }
         
@@ -78,6 +82,11 @@
                 <button id="fav-export-btn">Copy Favorites JSON</button>
             </div>
         </div>
+    </div>
+    
+    <div id="speed-control">
+        <label for="speed-slider">Speed: <span id="speed-value">1.0</span>x</label>
+        <input type="range" id="speed-slider" min="0" max="3" step="0.1" value="1.0">
     </div>
     
     <canvas id="glcanvas"></canvas>
@@ -660,8 +669,23 @@
             }
         }
 
-        function render(time) {
-            time *= 0.001; 
+        let globalTime = 0;
+        let lastTime = 0;
+        let speedMultiplier = 1.0;
+        
+        document.getElementById('speed-slider').addEventListener('input', (e) => {
+            speedMultiplier = parseFloat(e.target.value);
+            document.getElementById('speed-value').innerText = speedMultiplier.toFixed(1);
+        });
+
+        function render(now) {
+            if (lastTime === 0) lastTime = now;
+            let dt = now - lastTime;
+            lastTime = now;
+            if (dt > 100) dt = 16;
+            
+            globalTime += (dt * 0.001) * speedMultiplier;
+            
             const progInfo = temporaryFavoriteOverride || getProgram(gl, mainCache, currentSlide);
             if (progInfo) {
                 resizeCanvasToDisplaySize(canvas);
@@ -670,7 +694,7 @@
                 gl.bindBuffer(gl.ARRAY_BUFFER, gl.positionBuffer);
                 gl.enableVertexAttribArray(progInfo.posAttr);
                 gl.vertexAttribPointer(progInfo.posAttr, 2, gl.FLOAT, false, 0, 0);
-                gl.uniform1f(progInfo.timeLoc, time);
+                gl.uniform1f(progInfo.timeLoc, globalTime);
                 gl.uniform2f(progInfo.resLoc, canvas.width, canvas.height);
                 gl.uniform2f(progInfo.mouseLoc, mouseX, mouseY);
                 gl.drawArrays(gl.TRIANGLES, 0, 6);
@@ -685,7 +709,7 @@
                     item.gl.bindBuffer(item.gl.ARRAY_BUFFER, item.gl.positionBuffer);
                     item.gl.enableVertexAttribArray(pInfo.posAttr);
                     item.gl.vertexAttribPointer(pInfo.posAttr, 2, item.gl.FLOAT, false, 0, 0);
-                    item.gl.uniform1f(pInfo.timeLoc, time);
+                    item.gl.uniform1f(pInfo.timeLoc, globalTime);
                     item.gl.uniform2f(pInfo.resLoc, item.canvas.width, item.canvas.height);
                     item.gl.uniform2f(pInfo.mouseLoc, item.canvas.width/2, item.canvas.height/2);
                     item.gl.drawArrays(item.gl.TRIANGLES, 0, 6);
