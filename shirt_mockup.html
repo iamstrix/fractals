@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FLESH Shader Shirt Mockup</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            background: #0d0d0d;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: monospace;
+        }
+
+        #stage {
+            position: relative;
+            width: 800px;
+            height: 850px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* WebGL Shader Canvas */
+        #glcanvas {
+            position: absolute;
+            width: 800px;
+            height: 850px;
+            /* Mask canvas into T-Shirt Silhouette */
+            clip-path: url(#tshirt-clip);
+        }
+
+        /* Overlay SVG for realistic t-shirt shadows, seams, collar and wrinkles */
+        #tshirt-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 800px;
+            height: 850px;
+            pointer-events: none;
+        }
+
+        .title-tag {
+            position: absolute;
+            bottom: 20px;
+            color: rgba(255,255,255,0.4);
+            letter-spacing: 4px;
+            font-size: 14px;
+            text-transform: uppercase;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="stage">
+        <!-- Live WebGL Canvas (The FLESH Shader, zero text, zero UI overlays) -->
+        <canvas id="glcanvas"></canvas>
+
+        <!-- SVG overlay providing vector t-shirt wrinkles, collar, sleeves outline & fabric texture -->
+        <svg id="tshirt-overlay" viewBox="0 0 800 850" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <!-- T-Shirt Silhouette Clip Path -->
+                <clipPath id="tshirt-clip" clipPathUnits="userSpaceOnUse">
+                    <path d="M 270,100 Q 400,160 530,100 L 720,190 L 640,340 L 570,300 L 570,780 Q 400,810 230,780 L 230,300 L 160,340 L 80,190 Z" />
+                </clipPath>
+
+                <!-- Fabric Wrinkle / Shadow Overlay Gradient -->
+                <radialGradient id="fabric-shading" cx="50%" cy="45%" r="65%">
+                    <stop offset="0%" stop-color="#ffffff" stop-opacity="0.12"/>
+                    <stop offset="60%" stop-color="#000000" stop-opacity="0.2"/>
+                    <stop offset="100%" stop-color="#000000" stop-opacity="0.6"/>
+                </radialGradient>
+            </defs>
+
+            <!-- T-Shirt Outer Outline -->
+            <path d="M 270,100 Q 400,160 530,100 L 720,190 L 640,340 L 570,300 L 570,780 Q 400,810 230,780 L 230,300 L 160,340 L 80,190 Z" 
+                  fill="url(#fabric-shading)" stroke="#1a1a1a" stroke-width="6" />
+
+            <!-- Collar Line -->
+            <path d="M 270,100 Q 400,170 530,100 Q 400,120 270,100" fill="#121212" stroke="#2a2a2a" stroke-width="4" />
+            <path d="M 270,100 Q 400,170 530,100" fill="none" stroke="#000000" stroke-width="8" opacity="0.6" />
+
+            <!-- Sleeve Seams -->
+            <path d="M 230,300 Q 250,200 270,100" fill="none" stroke="#000000" stroke-width="3" opacity="0.5" />
+            <path d="M 570,300 Q 550,200 530,100" fill="none" stroke="#000000" stroke-width="3" opacity="0.5" />
+
+            <!-- Fabric Folds & Wrinkles -->
+            <path d="M 240,340 Q 300,380 320,500" fill="none" stroke="#000" stroke-width="4" opacity="0.25" />
+            <path d="M 560,340 Q 500,380 480,500" fill="none" stroke="#000" stroke-width="4" opacity="0.25" />
+            <path d="M 280,600 Q 400,640 520,600" fill="none" stroke="#000" stroke-width="3" opacity="0.2" />
+        </svg>
+
+        <div class="title-tag">ALL-OVER PRINT // FLESH SHADER (RAW ARTWORK)</div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('glcanvas');
+        const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+
+        const vsSource = `
+            attribute vec4 aVertexPosition;
+            void main() { gl_Position = aVertexPosition; }
+        `;
+
+        const fsSource = `precision highp float; uniform vec2 u_resolution; uniform float u_time;
+        mat2 rot(float a) { float s = sin(a), c = cos(a); return mat2(c, -s, s, c); }
+        vec2 hash( vec2 p ) { p = vec2( dot(p,vec2(127.1,311.7)), dot(p,vec2(269.5,183.3)) ); return -1.0 + 2.0*fract(sin(p)*43758.5453123); }
+        float noise( in vec2 p ) {
+            const float K1 = 0.366025404; const float K2 = 0.211324865; vec2 i = floor( p + (p.x+p.y)*K1 ); vec2 a = p - i + (i.x+i.y)*K2;
+            vec2 o = (a.x>a.y) ? vec2(1.0,0.0) : vec2(0.0,1.0); vec2 b = a - o + K2; vec2 c = a - 1.0 + 2.0*K2;
+            vec3 h = max( 0.5-vec3(dot(a,a), dot(b,b), dot(c,c) ), 0.0 );
+            vec3 n = h*h*h*h*vec3( dot(a,hash(i+0.0)), dot(b,hash(i+o)), dot(c,hash(i+1.0))); return dot( n, vec3(70.0) );
+        }
+        void main() {
+            vec2 uv = (gl_FragCoord.xy * 2.0 - u_resolution.xy) / min(u_resolution.x, u_resolution.y); float t = u_time * 0.5;
+            uv *= 1.0 + 0.1 * sin(t * 3.0 + length(uv) * 4.0); uv *= rot(noise(uv * 2.0 + t) * 0.4);
+            vec2 z = uv; float iter = 0.0;
+            for(int i = 0; i < 40; i++) {
+                z = vec2(z.x*z.x - z.y*z.y, 2.0*z.x*z.y) + vec2(0.35 + 0.1*sin(t), 0.35 + 0.1*cos(t*1.2));
+                z += 0.15 * vec2(noise(z*2.0 + t), noise(z*2.0 - t)); if(length(z) > 4.0) break; iter++;
+            }
+            float smooth_iter = iter - log2(max(1.0, log2(dot(z,z)))) + 4.0; float flesh = sin(smooth_iter * 0.3 + t * 2.0) * 0.5 + 0.5;
+            float vein = sin(smooth_iter * 0.8 - t * 4.0) * 0.5 + 0.5; vec3 col = mix(vec3(0.15, 0.0, 0.05), vec3(0.7, 0.1, 0.2), flesh); 
+            col = mix(col, vec3(0.3, 0.6, 0.1), vein * 0.3); col *= smoothstep(0.05, 0.3, length(uv) + 0.1*noise(uv*10.0+t*5.0));
+            gl_FragColor = vec4(col, 1.0);
+        }`;
+
+        function createShader(gl, type, source) {
+            const shader = gl.createShader(type);
+            gl.shaderSource(shader, source);
+            gl.compileShader(shader);
+            return shader;
+        }
+
+        const vs = createShader(gl, gl.VERTEX_SHADER, vsSource);
+        const fs = createShader(gl, gl.FRAGMENT_SHADER, fsSource);
+        const program = gl.createProgram();
+        gl.attachShader(program, vs);
+        gl.attachShader(program, fs);
+        gl.linkProgram(program);
+
+        const positionBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
+            -1, -1,  1, -1, -1,  1,
+            -1,  1,  1, -1,  1,  1,
+        ]), gl.STATIC_DRAW);
+
+        const posAttr = gl.getAttribLocation(program, 'aVertexPosition');
+        const timeLoc = gl.getUniformLocation(program, 'u_time');
+        const resLoc = gl.getUniformLocation(program, 'u_resolution');
+
+        function resize() {
+            canvas.width = 800;
+            canvas.height = 850;
+            gl.viewport(0, 0, canvas.width, canvas.height);
+        }
+        resize();
+
+        let startTime = performance.now();
+        function render() {
+            const t = (performance.now() - startTime) * 0.001;
+            gl.useProgram(program);
+            gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+            gl.enableVertexAttribArray(posAttr);
+            gl.vertexAttribPointer(posAttr, 2, gl.FLOAT, false, 0, 0);
+            gl.uniform1f(timeLoc, t);
+            gl.uniform2f(resLoc, canvas.width, canvas.height);
+            gl.drawArrays(gl.TRIANGLES, 0, 6);
+            requestAnimationFrame(render);
+        }
+        requestAnimationFrame(render);
+    </script>
+</body>
+</html>
