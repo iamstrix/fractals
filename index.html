@@ -217,6 +217,196 @@
             {
                 title: "E C H O P U L S E",
                 fs: `precision highp float; uniform vec2 u_resolution; uniform float u_time; vec3 palette( in float t, in vec3 a, in vec3 b, in vec3 c, in vec3 d ) { return a + b*cos( 6.28318*(c*t+d) ); } mat2 rot(float a) { float s = sin(a), c = cos(a); return mat2(c, -s, s, c); } void main() { vec2 uv = (gl_FragCoord.xy * 2.0 - u_resolution.xy) / min(u_resolution.x, u_resolution.y); vec2 uv0 = uv; float t = u_time * 1.14961; uv *= rot(t * 0.04006); vec3 finalColor = vec3(0.0); for(int i = 0; i < 6; i++) { float fi = float(i); uv = uv / dot(uv, uv) - vec2(0.41425); uv *= rot(length(uv0) * 1.99855 + sin(t + length(uv) * 0.96128)); uv.y += 0.37327 * cos(uv.x * 12.52945 - t); float d = length(uv) * exp(-length(uv0) * 1.09522); vec3 col = palette(length(uv0) + fi*0.27273 + t, vec3(0.73713, 0.18077, 0.12324), vec3(0.83550, 0.36177, 0.22355), vec3(2.41160, 1.47308, 1.43158), vec3(0.82556, 0.86530, 0.73754)); d = sin(d*5.20648 + t * 3.46884)/3.28310; d = abs(d); d = pow(0.01531 / d, 1.17460); finalColor += col * d; } gl_FragColor = vec4(clamp(finalColor, 0.0, 1.0), 1.0); }`
+            },
+
+            // --- New families: each one changes an OPERATOR, not just constants. ---
+            // See operators.html for the interactive breakdown of the vocabulary below.
+
+            {
+                // Box fold, but shaded by ORBIT TRAPS instead of glow accumulation.
+                // Colour comes from how close the orbit ever passed to a cross, a
+                // ring and a moving point - so structure is drawn, not bloomed.
+                title: "O R B I T T R A P",
+                fs: `precision highp float; uniform vec2 u_resolution; uniform float u_time;
+                vec3 palette( in float t, in vec3 a, in vec3 b, in vec3 c, in vec3 d ) { return a + b*cos( 6.28318*(c*t+d) ); }
+                mat2 rot(float a) { float s = sin(a), c = cos(a); return mat2(c, -s, s, c); }
+                void main() {
+                    vec2 uv = (gl_FragCoord.xy * 2.0 - u_resolution.xy) / min(u_resolution.x, u_resolution.y);
+                    vec2 uv0 = uv; float t = u_time * 0.35;
+                    uv *= 1.35;
+                    float trapCross = 1e9; float trapRing = 1e9; float trapPoint = 1e9;
+                    vec2 tp = vec2(0.62 * sin(t * 0.7), 0.62 * cos(t * 0.9));
+                    for (int i = 0; i < 8; i++) {
+                        float fi = float(i);
+                        uv = abs(uv) - vec2(0.86, 0.52);
+                        uv *= rot(0.42 + t * 0.23 + fi * 0.11);
+                        uv *= 1.24;
+                        trapCross = min(trapCross, min(abs(uv.x), abs(uv.y)));
+                        trapRing  = min(trapRing, abs(length(uv) - 0.9));
+                        trapPoint = min(trapPoint, length(uv - tp));
+                    }
+                    // sharp falloffs: a 12-deep box fold passes near every trap on
+                    // most pixels, so a soft exponent blows the whole frame out
+                    vec3 col = palette(trapCross * 5.0 + t * 0.4, vec3(0.5), vec3(0.45), vec3(1.0, 0.85, 0.65), vec3(0.0, 0.25, 0.5)) * exp(-trapCross * 30.0);
+                    col += vec3(0.95, 0.32, 0.14) * exp(-trapRing * 34.0) * 0.70;
+                    col += vec3(0.18, 0.72, 0.95) * exp(-trapPoint * 24.0) * 0.80;
+                    col *= 1.0 - 0.42 * smoothstep(0.3, 1.5, length(uv0));
+                    gl_FragColor = vec4(clamp(col, 0.0, 1.0), 1.0);
+                }`
+            },
+            {
+                // Polar mirror: wrap the angle into one of N sectors and mirror it.
+                // Produces true N-fold rotational symmetry, which no amount of
+                // inversion / box folding can reach.
+                title: "K A L E I D O",
+                fs: `precision highp float; uniform vec2 u_resolution; uniform float u_time;
+                vec3 palette( in float t, in vec3 a, in vec3 b, in vec3 c, in vec3 d ) { return a + b*cos( 6.28318*(c*t+d) ); }
+                mat2 rot(float a) { float s = sin(a), c = cos(a); return mat2(c, -s, s, c); }
+                void main() {
+                    vec2 uv = (gl_FragCoord.xy * 2.0 - u_resolution.xy) / min(u_resolution.x, u_resolution.y);
+                    vec2 uv0 = uv; float t = u_time * 0.30;
+                    const float N = 7.0; const float SEG = 6.28318 / N;
+                    vec3 col = vec3(0.0);
+                    for (int i = 0; i < 8; i++) {
+                        float fi = float(i);
+                        float r = length(uv);
+                        float a = atan(uv.y, uv.x);
+                        a = abs(mod(a + SEG * 0.5, SEG) - SEG * 0.5);
+                        uv = r * vec2(cos(a), sin(a));
+                        uv -= vec2(0.55, 0.0);
+                        uv *= rot(t * 0.35 + fi * 0.42);
+                        uv *= 1.24;
+                        float d = abs(length(uv) - 0.5);
+                        col += palette(fi * 0.13 + length(uv0) * 0.55 + t * 0.5, vec3(0.55, 0.42, 0.62), vec3(0.42, 0.38, 0.35), vec3(1.0, 1.1, 0.85), vec3(0.12, 0.45, 0.78)) * (0.011 / (d + 0.02));
+                    }
+                    col *= 1.0 - 0.5 * smoothstep(0.2, 1.5, length(uv0));
+                    gl_FragColor = vec4(clamp(col, 0.0, 1.0), 1.0);
+                }`
+            },
+            {
+                // Log-polar (Droste). log(r) turns scaling into translation, so a
+                // plain repeating grid in that space becomes an infinite self-similar
+                // zoom. No iteration loop at all - the recursion is in the mapping.
+                title: "D R O S T E",
+                fs: `precision highp float; uniform vec2 u_resolution; uniform float u_time;
+                vec3 palette( in float t, in vec3 a, in vec3 b, in vec3 c, in vec3 d ) { return a + b*cos( 6.28318*(c*t+d) ); }
+                void main() {
+                    vec2 uv = (gl_FragCoord.xy * 2.0 - u_resolution.xy) / min(u_resolution.x, u_resolution.y);
+                    float t = u_time * 0.28;
+                    float r = length(uv);
+                    float a = atan(uv.y, uv.x);
+                    float lr = log(max(r, 0.0005));
+                    const float N = 6.0;
+                    vec2 lp = vec2(lr * 1.5 - t, a * N / 6.28318 + lr * 0.45);
+                    vec2 id = floor(lp);
+                    vec2 f = fract(lp) - 0.5;
+                    float ring = abs(length(f) - 0.30);
+                    float bar = min(abs(f.x), abs(f.y));
+                    float seed = sin(id.x * 12.9898 + id.y * 78.233) * 0.5 + 0.5;
+                    vec3 col = palette(id.x * 0.12 + seed * 0.3 + t * 0.35, vec3(0.42, 0.38, 0.55), vec3(0.45, 0.40, 0.42), vec3(0.9, 1.0, 1.15), vec3(0.35, 0.10, 0.62));
+                    col *= 0.055 / (ring + 0.028);
+                    col += vec3(0.9, 0.75, 0.45) * (0.020 / (bar + 0.055)) * 0.6;
+                    col *= smoothstep(1.9, 0.35, r) * smoothstep(0.0, 0.06, r);
+                    gl_FragColor = vec4(clamp(col, 0.0, 1.0), 1.0);
+                }`
+            },
+            {
+                // Sierpinski triangle fold shaded as a hard-edged SDF. Flat fills and
+                // a crisp contour instead of additive bloom - the same geometry family
+                // reads completely differently once the glow is removed.
+                title: "S I E R P I N",
+                fs: `precision highp float; uniform vec2 u_resolution; uniform float u_time;
+                mat2 rot(float a) { float s = sin(a), c = cos(a); return mat2(c, -s, s, c); }
+                void main() {
+                    vec2 uv = (gl_FragCoord.xy * 2.0 - u_resolution.xy) / min(u_resolution.x, u_resolution.y);
+                    // capped so the 160x90 carousel preview keeps its structure
+                    // instead of dissolving into a grey wash at that size
+                    float px = min(2.0 / u_resolution.y, 0.006);
+                    float t = u_time * 0.22;
+                    vec2 p = uv * 0.95;
+                    p *= rot(t * 0.18);
+                    p.y += 0.04;
+                    const vec2 NRM = vec2(-0.5, 0.8660254);
+                    float scale = 1.0;
+                    float k = 1.92 + 0.10 * sin(t * 0.9);
+                    for (int i = 0; i < 7; i++) {
+                        p.x = abs(p.x);
+                        p -= 2.0 * min(0.0, dot(p, NRM)) * NRM;
+                        p = p * k - vec2(0.0, 1.0) * (k - 1.0);
+                        scale *= k;
+                    }
+                    float d = (length(p) - 0.62) / scale;
+                    float fill = smoothstep(px, -px, d);
+                    float edge = smoothstep(px * 2.2, 0.0, abs(d) - px * 0.7);
+                    vec3 ground = vec3(0.055, 0.06, 0.085);
+                    vec3 body = vec3(0.86, 0.90, 0.97) * (0.55 + 0.45 * smoothstep(1.2, 0.0, length(uv)));
+                    vec3 col = mix(ground, body, fill);
+                    col = mix(col, vec3(1.0, 0.42, 0.22), edge * 0.9);
+                    gl_FragColor = vec4(clamp(col, 0.0, 1.0), 1.0);
+                }`
+            },
+            {
+                // fract-grid lattice drawn dark-on-light. Inverting the tone is the
+                // cheapest way out of the neon-on-black look - the line weight is
+                // kept screen-constant per level so deep nesting stays readable.
+                title: "B O N E",
+                fs: `precision highp float; uniform vec2 u_resolution; uniform float u_time;
+                mat2 rot(float a) { float s = sin(a), c = cos(a); return mat2(c, -s, s, c); }
+                void main() {
+                    vec2 uv = (gl_FragCoord.xy * 2.0 - u_resolution.xy) / min(u_resolution.x, u_resolution.y);
+                    float px = min(2.0 / u_resolution.y, 0.004);
+                    float t = u_time * 0.22;
+                    vec2 p = uv * rot(t * 0.12);
+                    float s = 1.0; float ink = 0.0; float tint = 0.0;
+                    for (int i = 0; i < 5; i++) {
+                        float fi = float(i);
+                        p = fract(p * 1.62 + 0.5) - 0.5;
+                        p *= rot(0.30 * fi + t * 0.25);
+                        s *= 1.62;
+                        float w = px * s;
+                        // level-of-detail: a level whose strokes have grown too wide
+                        // for the current resolution fades out rather than flooding
+                        // the frame - keeps the 160x90 preview legible.
+                        float lod = 1.0 - smoothstep(0.030, 0.070, w);
+                        float ring = abs(length(p) - 0.30);
+                        float cross = min(abs(p.x), abs(p.y));
+                        float line = min(ring, cross * 1.4);
+                        float cov = smoothstep(w * 1.8, w * 0.5, line) * lod;
+                        ink = max(ink, cov * (1.0 - fi * 0.10));
+                        tint = max(tint, cov * step(3.0, fi));
+                    }
+                    vec3 paper = vec3(0.925, 0.912, 0.878) - 0.06 * smoothstep(0.2, 1.6, length(uv));
+                    vec3 col = mix(paper, vec3(0.075, 0.085, 0.105), ink);
+                    col = mix(col, vec3(0.72, 0.20, 0.16), tint * 0.55);
+                    gl_FragColor = vec4(clamp(col, 0.0, 1.0), 1.0);
+                }`
+            },
+            {
+                // Conformal z^2 + mod-repeat, shaded by DENSITY: how many iterations
+                // landed inside a cell, then posterised. Gives flat banded regions
+                // with hard borders - no bloom anywhere in the shader.
+                title: "D E N S I T Y",
+                fs: `precision highp float; uniform vec2 u_resolution; uniform float u_time;
+                vec3 palette( in float t, in vec3 a, in vec3 b, in vec3 c, in vec3 d ) { return a + b*cos( 6.28318*(c*t+d) ); }
+                void main() {
+                    vec2 uv = (gl_FragCoord.xy * 2.0 - u_resolution.xy) / min(u_resolution.x, u_resolution.y);
+                    float t = u_time * 0.40;
+                    vec2 z = uv * 1.15;
+                    vec2 c = vec2(0.34 * sin(t * 0.31), 0.34 * cos(t * 0.27));
+                    float hits = 0.0; float esc = 24.0;
+                    for (int i = 0; i < 24; i++) {
+                        z = vec2(z.x * z.x - z.y * z.y, 2.0 * z.x * z.y) + c;
+                        vec2 g = mod(z + 0.5, 1.0) - 0.5;
+                        hits += step(length(g), 0.24);
+                        if (dot(z, z) > 20.0) { esc = float(i); break; }
+                    }
+                    float dens = hits / 12.0;
+                    float band = esc / 24.0;
+                    vec3 col = palette(dens * 0.55 + band * 0.35, vec3(0.44, 0.40, 0.37), vec3(0.40, 0.34, 0.28), vec3(0.90, 0.75, 0.60), vec3(0.15, 0.42, 0.70));
+                    col = floor(col * 6.0) / 6.0;
+                    col += 0.10 * step(0.5, fract(dens * 6.0));
+                    gl_FragColor = vec4(clamp(col, 0.0, 1.0), 1.0);
+                }`
             }
         ];
 
