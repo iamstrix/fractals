@@ -1,29 +1,168 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Schizophrenic Fractals</title>
     <style>
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #000; font-family: 'Courier New', Courier, monospace; }
-        canvas { display: block; width: 100vw; height: 100vh; }
-        #overlay { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #fff; font-size: 4rem; font-weight: bold; mix-blend-mode: exclusion; pointer-events: none; text-align: center; text-transform: uppercase; letter-spacing: 1rem; z-index: 10; animation: glitch 2s infinite linear alternate-reverse; white-space: nowrap; }
-        #instructions { position: absolute; bottom: 90px; width: 100%; text-align: center; color: rgba(255, 255, 255, 0.4); font-size: 1.2rem; pointer-events: none; z-index: 10; letter-spacing: 0.2rem; text-transform: uppercase; }
-        #carousel { position: absolute; bottom: 20px; width: 100%; height: 160px; pointer-events: auto; z-index: 20; overflow: hidden; -webkit-mask-image: linear-gradient(to right, transparent, black 15%, black 85%, transparent); mask-image: linear-gradient(to right, transparent, black 15%, black 85%, transparent); }
-        .carousel-item { position: absolute; left: 50%; top: 20px; display: flex; flex-direction: column; align-items: center; color: rgba(255, 255, 255, 0.4); font-size: 1rem; cursor: pointer; transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94); white-space: nowrap; text-transform: uppercase; letter-spacing: 0.1rem; transform-origin: center center; }
-        .carousel-item:hover { color: rgba(255, 255, 255, 0.8); }
-        .carousel-item.active { color: #fff; font-weight: bold; text-shadow: 0 0 10px rgba(255,255,255,0.5), 2px 0 0 red, -2px 0 0 cyan; pointer-events: none; }
-        .carousel-item canvas { width: 160px; height: 90px; border-radius: 4px; border: 2px solid transparent; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(0,0,0,0.5); display: block; margin-bottom: 8px; }
-        .carousel-item:hover canvas { border-color: rgba(255,255,255,0.5); }
-        .carousel-item.active canvas { border-color: #fff; box-shadow: 0 0 20px rgba(255,255,255,0.4), 0 0 10px red, 0 0 10px cyan; }
-        .car-title { text-align: center; font-size: 0.95rem; }
-        
-        #fav-btn { position: absolute; top: 20px; right: 30px; font-size: 2.5rem; color: rgba(255,255,255,0.3); cursor: pointer; z-index: 30; transition: all 0.3s; user-select: none; }
-        #fav-btn:hover { color: rgba(255,255,255,0.8); transform: scale(1.1); }
-        #fav-btn.active { color: #ffeb3b; text-shadow: 0 0 15px #ffeb3b; }
-        
-        #fav-tab-btn { position: absolute; top: 30px; left: 30px; font-size: 1.2rem; color: rgba(255,255,255,0.5); cursor: pointer; z-index: 30; transition: all 0.3s; text-transform: uppercase; letter-spacing: 0.1rem; user-select: none; border: 1px solid rgba(255,255,255,0.3); padding: 8px 16px; border-radius: 4px; }
-        #fav-tab-btn:hover { color: #fff; border-color: #fff; background: rgba(255,255,255,0.1); }
+        body,
+        html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #000;
+            font-family: 'Courier New', Courier, monospace;
+        }
+
+        canvas {
+            display: block;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        #overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #fff;
+            font-size: 4rem;
+            font-weight: bold;
+            mix-blend-mode: exclusion;
+            pointer-events: none;
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 1rem;
+            z-index: 10;
+            animation: glitch 2s infinite linear alternate-reverse;
+            white-space: nowrap;
+        }
+
+        #instructions {
+            position: absolute;
+            bottom: 90px;
+            width: 100%;
+            text-align: center;
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 1.2rem;
+            pointer-events: none;
+            z-index: 10;
+            letter-spacing: 0.2rem;
+            text-transform: uppercase;
+        }
+
+        #carousel {
+            position: absolute;
+            bottom: 20px;
+            width: 100%;
+            height: 160px;
+            pointer-events: auto;
+            z-index: 20;
+            overflow: hidden;
+            -webkit-mask-image: linear-gradient(to right, transparent, black 15%, black 85%, transparent);
+            mask-image: linear-gradient(to right, transparent, black 15%, black 85%, transparent);
+        }
+
+        .carousel-item {
+            position: absolute;
+            left: 50%;
+            top: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            white-space: nowrap;
+            text-transform: uppercase;
+            letter-spacing: 0.1rem;
+            transform-origin: center center;
+        }
+
+        .carousel-item:hover {
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .carousel-item.active {
+            color: #fff;
+            font-weight: bold;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.5), 2px 0 0 red, -2px 0 0 cyan;
+            pointer-events: none;
+        }
+
+        .carousel-item canvas {
+            width: 160px;
+            height: 90px;
+            border-radius: 4px;
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+            display: block;
+            margin-bottom: 8px;
+        }
+
+        .carousel-item:hover canvas {
+            border-color: rgba(255, 255, 255, 0.5);
+        }
+
+        .carousel-item.active canvas {
+            border-color: #fff;
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.4), 0 0 10px red, 0 0 10px cyan;
+        }
+
+        .car-title {
+            text-align: center;
+            font-size: 0.95rem;
+        }
+
+        #fav-btn {
+            position: absolute;
+            top: 20px;
+            right: 30px;
+            font-size: 2.5rem;
+            color: rgba(255, 255, 255, 0.3);
+            cursor: pointer;
+            z-index: 30;
+            transition: all 0.3s;
+            user-select: none;
+        }
+
+        #fav-btn:hover {
+            color: rgba(255, 255, 255, 0.8);
+            transform: scale(1.1);
+        }
+
+        #fav-btn.active {
+            color: #ffeb3b;
+            text-shadow: 0 0 15px #ffeb3b;
+        }
+
+        #fav-tab-btn {
+            position: absolute;
+            top: 30px;
+            left: 30px;
+            font-size: 1.2rem;
+            color: rgba(255, 255, 255, 0.5);
+            cursor: pointer;
+            z-index: 30;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 0.1rem;
+            user-select: none;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 8px 16px;
+            border-radius: 4px;
+        }
+
+        #fav-tab-btn:hover {
+            color: #fff;
+            border-color: #fff;
+            background: rgba(255, 255, 255, 0.1);
+        }
 
         #speed-control {
             position: absolute;
@@ -39,11 +178,13 @@
             text-transform: uppercase;
             letter-spacing: 0.1rem;
         }
+
         #speed-slider {
             width: 100px;
             cursor: pointer;
             accent-color: #fff;
         }
+
         #speed-input {
             background: transparent;
             border: 1px solid rgba(255, 255, 255, 0.25);
@@ -57,6 +198,7 @@
             outline: none;
             transition: border-color 0.2s;
         }
+
         #speed-input:focus {
             border-color: #fff;
         }
@@ -75,57 +217,213 @@
             transition: all 0.2s;
             margin-right: 8px;
         }
+
         #pause-btn:hover {
             border-color: #fff;
             color: #fff;
         }
+
         #pause-btn.frozen {
             border-color: #4fc3f7;
             color: #4fc3f7;
             background: rgba(79, 195, 247, 0.1);
         }
 
-        #fav-panel { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.85); backdrop-filter: blur(10px); z-index: 50; display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.4s ease; }
-        #fav-panel.open { opacity: 1; pointer-events: auto; }
-        
-        #fav-panel-content { width: 80%; max-width: 800px; max-height: 80vh; display: flex; flex-direction: column; background: rgba(20,20,20,0.9); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; overflow: hidden; box-shadow: 0 10px 40px rgba(0,0,0,0.8); }
-        
-        #fav-panel-header { padding: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; align-items: center; color: #fff; }
-        #fav-panel-header h2 { margin: 0; font-weight: normal; letter-spacing: 0.2rem; text-transform: uppercase; font-size: 1.5rem; text-shadow: 2px 0 red, -2px 0 cyan; }
-        #fav-panel-close { background: none; border: none; color: #fff; font-size: 2rem; cursor: pointer; transition: transform 0.2s; }
-        #fav-panel-close:hover { transform: scale(1.2); color: red; }
-        
-        #fav-panel-list { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 10px; }
-        .fav-item { display: flex; justify-content: space-between; align-items: center; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 4px; transition: background 0.2s; color: #fff; }
-        .fav-item:hover { background: rgba(255,255,255,0.1); }
-        .fav-item-title { font-size: 1.2rem; letter-spacing: 0.1rem; flex: 1; }
-        .fav-item-actions { display: flex; gap: 10px; }
-        .fav-action-btn { background: none; border: 1px solid rgba(255,255,255,0.3); color: #fff; padding: 6px 12px; cursor: pointer; border-radius: 3px; text-transform: uppercase; font-size: 0.8rem; letter-spacing: 0.1rem; transition: all 0.2s; }
-        .fav-action-btn:hover { background: rgba(255,255,255,0.2); border-color: #fff; }
-        .fav-action-btn.delete:hover { background: rgba(255,0,0,0.3); border-color: red; color: #ffaaaa; }
-        
-        #fav-panel-footer { padding: 20px; border-top: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: center; }
-        #fav-export-btn { background: #fff; color: #000; border: none; padding: 12px 24px; font-size: 1rem; text-transform: uppercase; letter-spacing: 0.1rem; cursor: pointer; border-radius: 4px; font-weight: bold; transition: transform 0.2s; }
-        #fav-export-btn:hover { transform: scale(1.05); box-shadow: 0 0 15px rgba(255,255,255,0.5); }
+        #fav-panel {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(10px);
+            z-index: 50;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.4s ease;
+        }
+
+        #fav-panel.open {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        #fav-panel-content {
+            width: 80%;
+            max-width: 800px;
+            max-height: 80vh;
+            display: flex;
+            flex-direction: column;
+            background: rgba(20, 20, 20, 0.9);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
+        }
+
+        #fav-panel-header {
+            padding: 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: #fff;
+        }
+
+        #fav-panel-header h2 {
+            margin: 0;
+            font-weight: normal;
+            letter-spacing: 0.2rem;
+            text-transform: uppercase;
+            font-size: 1.5rem;
+            text-shadow: 2px 0 red, -2px 0 cyan;
+        }
+
+        #fav-panel-close {
+            background: none;
+            border: none;
+            color: #fff;
+            font-size: 2rem;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        #fav-panel-close:hover {
+            transform: scale(1.2);
+            color: red;
+        }
+
+        #fav-panel-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .fav-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
+            transition: background 0.2s;
+            color: #fff;
+        }
+
+        .fav-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .fav-item-title {
+            font-size: 1.2rem;
+            letter-spacing: 0.1rem;
+            flex: 1;
+        }
+
+        .fav-item-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .fav-action-btn {
+            background: none;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: #fff;
+            padding: 6px 12px;
+            cursor: pointer;
+            border-radius: 3px;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            letter-spacing: 0.1rem;
+            transition: all 0.2s;
+        }
+
+        .fav-action-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: #fff;
+        }
+
+        .fav-action-btn.delete:hover {
+            background: rgba(255, 0, 0, 0.3);
+            border-color: red;
+            color: #ffaaaa;
+        }
+
+        #fav-panel-footer {
+            padding: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            justify-content: center;
+        }
+
+        #fav-export-btn {
+            background: #fff;
+            color: #000;
+            border: none;
+            padding: 12px 24px;
+            font-size: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1rem;
+            cursor: pointer;
+            border-radius: 4px;
+            font-weight: bold;
+            transition: transform 0.2s;
+        }
+
+        #fav-export-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.5);
+        }
 
         @keyframes glitch {
-            0% { text-shadow: 5px 0 0 red, -5px 0 0 cyan; transform: translate(-50%, -50%) skewX(0deg); }
-            5% { text-shadow: -5px 0 0 red, 5px 0 0 cyan; transform: translate(-50%, -50%) skewX(15deg); }
-            10% { text-shadow: 5px 0 0 red, -5px 0 0 cyan; transform: translate(-50%, -50%) skewX(-15deg); }
-            15% { text-shadow: -5px 0 0 red, 5px 0 0 cyan; transform: translate(-50%, -50%) skewX(0deg); }
-            95% { text-shadow: 5px 0 0 red, -5px 0 0 cyan; transform: translate(-50%, -50%) skewX(0deg); }
-            100% { text-shadow: -8px 5px 0 red, 8px -5px 0 cyan; transform: translate(-50%, -50%) skewX(5deg); }
+            0% {
+                text-shadow: 5px 0 0 red, -5px 0 0 cyan;
+                transform: translate(-50%, -50%) skewX(0deg);
+            }
+
+            5% {
+                text-shadow: -5px 0 0 red, 5px 0 0 cyan;
+                transform: translate(-50%, -50%) skewX(15deg);
+            }
+
+            10% {
+                text-shadow: 5px 0 0 red, -5px 0 0 cyan;
+                transform: translate(-50%, -50%) skewX(-15deg);
+            }
+
+            15% {
+                text-shadow: -5px 0 0 red, 5px 0 0 cyan;
+                transform: translate(-50%, -50%) skewX(0deg);
+            }
+
+            95% {
+                text-shadow: 5px 0 0 red, -5px 0 0 cyan;
+                transform: translate(-50%, -50%) skewX(0deg);
+            }
+
+            100% {
+                text-shadow: -8px 5px 0 red, 8px -5px 0 cyan;
+                transform: translate(-50%, -50%) skewX(5deg);
+            }
         }
     </style>
 </head>
+
 <body>
     <div id="overlay">V O I D</div>
     <div id="instructions">◄ Left / Right Arrows to Traverse ►</div>
     <div id="carousel"></div>
-    
+
     <div id="fav-btn">★</div>
     <div id="fav-tab-btn">Favorites</div>
-    
+
     <div id="fav-panel" class="">
         <div id="fav-panel-content">
             <div id="fav-panel-header">
@@ -138,16 +436,16 @@
             </div>
         </div>
     </div>
-    
+
     <div id="speed-control">
         <button id="pause-btn" title="Freeze/unfreeze animation (saves GPU)">▶ Live</button>
         <label for="speed-slider">Speed:</label>
-        <input type="range" id="speed-slider" min="0" max="3" step="0.05" value="1.0">
-        <input type="number" id="speed-input" min="0" max="10" step="0.01" value="1.00">
+        <input type="range" id="speed-slider" min="0" max="3" step="0.01" value="0.05">
+        <input type="number" id="speed-input" min="0" max="10" step="0.01" value="0.05">
     </div>
-    
+
     <canvas id="glcanvas"></canvas>
-    
+
     <script>
         const canvas = document.getElementById('glcanvas');
         const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
@@ -461,19 +759,19 @@
         for (let i = -3; i <= 3; i++) {
             const item = document.createElement('div');
             item.className = 'carousel-item';
-            
+
             const previewCanvas = document.createElement('canvas');
             previewCanvas.width = 160;
             previewCanvas.height = 90;
             const ctxGl = previewCanvas.getContext('webgl') || previewCanvas.getContext('experimental-webgl');
-            
+
             const title = document.createElement('div');
             title.className = 'car-title';
-            
+
             item.appendChild(previewCanvas);
             item.appendChild(title);
             carouselContainer.appendChild(item);
-            
+
             const carouselItem = {
                 element: item,
                 canvas: previewCanvas,
@@ -483,7 +781,7 @@
                 titleDiv: title,
                 targetIdx: 0
             };
-            
+
             item.addEventListener('click', () => {
                 if (carouselItem.offset !== 0) {
                     currentSlide = (currentSlide + carouselItem.offset + TOTAL_SLIDES) % TOTAL_SLIDES;
@@ -497,7 +795,7 @@
             let delta = currentSlide - previousSlide;
             if (delta > TOTAL_SLIDES / 2) delta -= TOTAL_SLIDES;
             if (delta < -TOTAL_SLIDES / 2) delta += TOTAL_SLIDES;
-            
+
             const isLargeJump = Math.abs(delta) > 3 || instant;
 
             carouselItems.forEach(item => {
@@ -522,7 +820,7 @@
                     item.element.style.transform = transformStr;
                     item.element.style.opacity = opacityStr;
                     void item.element.offsetWidth; // Force reflow
-                    
+
                     const idx = (currentSlide + newOffset + TOTAL_SLIDES) % TOTAL_SLIDES;
                     item.targetIdx = idx;
                     item.titleDiv.innerText = getTitle(idx);
@@ -552,18 +850,18 @@
                 glCtx.vertexShader = createShader(glCtx, glCtx.VERTEX_SHADER, vsSource);
                 glCtx.positionBuffer = glCtx.createBuffer();
                 glCtx.bindBuffer(glCtx.ARRAY_BUFFER, glCtx.positionBuffer);
-                const positions = [ -1.0, -1.0, 1.0, -1.0, -1.0, 1.0, -1.0, 1.0, 1.0, -1.0, 1.0, 1.0 ];
+                const positions = [-1.0, -1.0, 1.0, -1.0, -1.0, 1.0, -1.0, 1.0, 1.0, -1.0, 1.0, 1.0];
                 glCtx.bufferData(glCtx.ARRAY_BUFFER, new Float32Array(positions), glCtx.STATIC_DRAW);
             }
 
             const fragmentShader = createShader(glCtx, glCtx.FRAGMENT_SHADER, fsSource);
             if (!fragmentShader) return index === 0 ? null : getProgram(glCtx, cache, 0);
-            
+
             const program = glCtx.createProgram();
             glCtx.attachShader(program, glCtx.vertexShader);
             glCtx.attachShader(program, fragmentShader);
             glCtx.linkProgram(program);
-            
+
             const pInfo = {
                 title: title,
                 program: program,
@@ -579,7 +877,7 @@
         let currentSlide = 0;
         const overlay = document.getElementById('overlay');
         const instructions = document.getElementById('instructions');
-        
+
         let temporaryFavoriteOverride = null;
 
         function updateUI(instant = false) {
@@ -603,7 +901,7 @@
         document.addEventListener('click', (e) => {
             if (e.target.closest('#carousel') || e.target.closest('#fav-panel') || e.target.closest('#fav-tab-btn') || e.target.closest('#fav-btn') || e.target.closest('#speed-control') || e.target.closest('input')) return;
             const pInfo = temporaryFavoriteOverride || getProgram(gl, mainCache, currentSlide);
-            if(pInfo && pInfo.fsSource) {
+            if (pInfo && pInfo.fsSource) {
                 navigator.clipboard.writeText(pInfo.fsSource).then(() => {
                     const originalText = instructions.innerText;
                     instructions.innerText = "SHADER COPIED TO CLIPBOARD!";
@@ -625,7 +923,7 @@
         function toggleFavorite() {
             const pInfo = temporaryFavoriteOverride || getProgram(gl, mainCache, currentSlide);
             if (!pInfo) return;
-            
+
             const existingIdx = favorites.findIndex(f => f.title === pInfo.title);
             if (existingIdx >= 0) {
                 favorites.splice(existingIdx, 1);
@@ -640,7 +938,7 @@
             const btn = document.getElementById('fav-btn');
             const pInfo = temporaryFavoriteOverride || getProgram(gl, mainCache, currentSlide);
             if (!pInfo) return;
-            
+
             const isFav = favorites.some(f => f.title === pInfo.title);
             if (isFav) {
                 btn.classList.add('active');
@@ -650,13 +948,13 @@
         }
 
         document.getElementById('fav-btn').addEventListener('click', toggleFavorite);
-        
+
         const favPanel = document.getElementById('fav-panel');
         document.getElementById('fav-tab-btn').addEventListener('click', () => {
             favPanel.classList.add('open');
             renderFavoritesList();
         });
-        
+
         document.getElementById('fav-panel-close').addEventListener('click', () => {
             favPanel.classList.remove('open');
         });
@@ -664,12 +962,12 @@
         function loadFavoriteIntoView(fav) {
             const fragmentShader = createShader(gl, gl.FRAGMENT_SHADER, fav.fsSource);
             if (!fragmentShader) return;
-            
+
             const program = gl.createProgram();
             gl.attachShader(program, gl.vertexShader);
             gl.attachShader(program, fragmentShader);
             gl.linkProgram(program);
-            
+
             temporaryFavoriteOverride = {
                 title: fav.title,
                 program: program,
@@ -678,7 +976,7 @@
                 resLoc: gl.getUniformLocation(program, 'u_resolution'),
                 posAttr: gl.getAttribLocation(program, 'aVertexPosition')
             };
-            
+
             overlay.innerText = fav.title;
             instructions.innerText = "◄ Traverse arrows to exit Favorite View ►";
             updateFavButton();
@@ -688,23 +986,23 @@
         function renderFavoritesList() {
             const list = document.getElementById('fav-panel-list');
             list.innerHTML = '';
-            
+
             if (favorites.length === 0) {
                 list.innerHTML = '<div style="color: rgba(255,255,255,0.4); text-align: center; padding: 20px;">No favorites saved yet. Press F or click the ★ to save some!</div>';
                 return;
             }
-            
+
             favorites.forEach((fav, index) => {
                 const item = document.createElement('div');
                 item.className = 'fav-item';
-                
+
                 const title = document.createElement('div');
                 title.className = 'fav-item-title';
                 title.innerText = fav.title;
-                
+
                 const actions = document.createElement('div');
                 actions.className = 'fav-item-actions';
-                
+
                 const viewBtn = document.createElement('button');
                 viewBtn.className = 'fav-action-btn';
                 viewBtn.innerText = 'View';
@@ -712,7 +1010,7 @@
                     loadFavoriteIntoView(fav);
                     favPanel.classList.remove('open');
                 });
-                
+
                 const delBtn = document.createElement('button');
                 delBtn.className = 'fav-action-btn delete';
                 delBtn.innerText = 'Remove';
@@ -721,7 +1019,7 @@
                     saveFavorites();
                     updateFavButton();
                 });
-                
+
                 actions.appendChild(viewBtn);
                 actions.appendChild(delBtn);
                 item.appendChild(title);
@@ -729,7 +1027,7 @@
                 list.appendChild(item);
             });
         }
-        
+
         document.getElementById('fav-export-btn').addEventListener('click', () => {
             const jsonStr = JSON.stringify(favorites, null, 2);
             navigator.clipboard.writeText(jsonStr).then(() => {
@@ -739,14 +1037,14 @@
                 setTimeout(() => { btn.innerText = orig; }, 2000);
             });
         });
-        
+
         updateUI(true);
 
         function resizeCanvasToDisplaySize(canvas) {
-            const displayWidth  = canvas.clientWidth;
+            const displayWidth = canvas.clientWidth;
             const displayHeight = canvas.clientHeight;
             if (canvas.width !== displayWidth || canvas.height !== displayHeight) {
-                canvas.width  = displayWidth;
+                canvas.width = displayWidth;
                 canvas.height = displayHeight;
             }
         }
@@ -754,8 +1052,8 @@
         var isPaused = localStorage.getItem('fractal_paused') === 'true';
         let globalTime = 0;
         let lastTime = 0;
-        let speedMultiplier = 1.0;
-        
+        let speedMultiplier = 0.05;
+
         const speedSlider = document.getElementById('speed-slider');
         const speedInput = document.getElementById('speed-input');
         const pauseBtn = document.getElementById('pause-btn');
@@ -838,7 +1136,7 @@
             let dt = now - lastTime;
             lastTime = now;
             if (dt > 100) dt = 16;
-            
+
             globalTime += (dt * 0.001) * speedMultiplier;
             drawFrame();
             requestAnimationFrame(render);
@@ -852,4 +1150,5 @@
         }
     </script>
 </body>
+
 </html>

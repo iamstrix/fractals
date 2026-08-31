@@ -1,0 +1,1191 @@
+<meta charset="UTF-8">
+<title>Fold Lab</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+  /* ---------------------------------------------------------------
+     Fold Lab - single-theme by intent. The page exists to look at
+     luminous WebGL output, so the chrome commits to a dark instrument
+     panel and paints every colour explicitly (no theme inheritance).
+     --------------------------------------------------------------- */
+  :root {
+    --ground:    #0E1116;
+    --panel:     #151A22;
+    --raised:    #1C222C;
+    --sunk:      #0A0D12;
+    --line:      #28313F;
+    --line-soft: #1E2632;
+    --ink:       #DCE3ED;
+    --ink-mid:   #A3AEC0;
+    --ink-dim:   #78849A;
+    --ink-faint: #4E5A6E;
+    --signal:    #6FD6C4;
+    --signal-lo: #2E5F58;
+    --count:     #E8A55C;
+    --bad:       #E8735C;
+
+    --mono: ui-monospace, "Cascadia Mono", "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace;
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+
+    --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 24px; --s6: 36px;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--mono);
+    font-size: 13px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* --- type roles ------------------------------------------------ */
+  .label {
+    font-size: 10px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--ink-dim);
+  }
+  .num { font-variant-numeric: tabular-nums; }
+  .prose {
+    font-family: var(--sans);
+    font-size: 13px;
+    line-height: 1.65;
+    color: var(--ink-mid);
+    max-width: 62ch;
+  }
+
+  /* --- shell ------------------------------------------------------ */
+  .shell { max-width: 1500px; margin: 0 auto; padding: 0 var(--s5) var(--s6); }
+
+  header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: var(--s4);
+    padding: var(--s5) 0 var(--s4);
+    border-bottom: 1px solid var(--line);
+  }
+  h1 {
+    margin: 0;
+    font-size: 24px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    text-wrap: balance;
+  }
+  h1 span { color: var(--signal); }
+  .sub { margin: var(--s2) 0 0; font-family: var(--sans); font-size: 13px; color: var(--ink-dim); max-width: 60ch; }
+
+  .toolbar { display: flex; flex-wrap: wrap; gap: var(--s2); align-items: center; }
+
+  button, select {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink);
+    background: var(--raised);
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    padding: 7px 12px;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+  }
+  button:hover, select:hover { border-color: var(--signal-lo); color: var(--signal); }
+  button:active { background: var(--sunk); }
+  button.primary { background: var(--signal-lo); border-color: var(--signal-lo); color: #DFFBF5; }
+  button.primary:hover { background: #3A756C; color: #fff; }
+  :focus-visible { outline: 2px solid var(--signal); outline-offset: 2px; }
+
+  /* --- main grid -------------------------------------------------- */
+  main {
+    display: grid;
+    grid-template-columns: minmax(0, 420px) minmax(0, 1fr);
+    gap: var(--s5);
+    align-items: start;
+    padding-top: var(--s5);
+  }
+
+  /* --- rail: the pipeline ---------------------------------------- */
+  .rail-head {
+    display: flex; align-items: baseline; justify-content: space-between;
+    gap: var(--s3); margin-bottom: var(--s3);
+  }
+  .pipeline { display: flex; flex-direction: column; gap: var(--s2); }
+
+  .op {
+    background: var(--panel);
+    border: 1px solid var(--line-soft);
+    border-radius: 4px;
+    overflow: hidden;
+    transition: border-color 0.15s;
+  }
+  .op.on { border-color: var(--line); }
+  .op.on .op-idx { background: var(--signal-lo); color: #DFFBF5; }
+  .op.on .op-name { color: var(--ink); }
+
+  .op-row { display: flex; align-items: center; gap: var(--s2); padding: var(--s2) var(--s3); }
+
+  .op-idx {
+    flex: none;
+    width: 22px; height: 22px;
+    display: grid; place-items: center;
+    border-radius: 3px;
+    background: var(--sunk);
+    color: var(--ink-faint);
+    font-size: 10px;
+    font-variant-numeric: tabular-nums;
+    transition: background 0.15s, color 0.15s;
+  }
+
+  .op-name {
+    flex: 1 1 auto;
+    min-width: 0;
+    font-size: 11.5px;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    text-align: left;
+    background: none; border: none; padding: 0;
+    cursor: pointer;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .op-name:hover { color: var(--signal); }
+
+  .op-move { display: flex; flex-direction: column; gap: 1px; }
+  .op-move button {
+    padding: 0; width: 18px; height: 11px;
+    display: grid; place-items: center;
+    font-size: 8px; line-height: 1;
+    background: transparent; border: 1px solid var(--line-soft);
+    color: var(--ink-faint);
+  }
+  .op-move button:hover { color: var(--signal); border-color: var(--signal-lo); }
+
+  /* toggle */
+  .sw {
+    flex: none;
+    width: 34px; height: 18px;
+    border-radius: 9px;
+    background: var(--sunk);
+    border: 1px solid var(--line);
+    position: relative;
+    cursor: pointer;
+    padding: 0;
+    transition: background 0.18s, border-color 0.18s;
+  }
+  .sw::after {
+    content: "";
+    position: absolute; top: 2px; left: 2px;
+    width: 12px; height: 12px; border-radius: 50%;
+    background: var(--ink-faint);
+    transition: transform 0.18s, background 0.18s;
+  }
+  .sw[aria-checked="true"] { background: var(--signal-lo); border-color: var(--signal-lo); }
+  .sw[aria-checked="true"]::after { transform: translateX(16px); background: #DFFBF5; }
+
+  /* count stepper */
+  .cnt { display: flex; align-items: center; gap: 2px; flex: none; }
+  .cnt button {
+    padding: 0; width: 17px; height: 17px;
+    display: grid; place-items: center;
+    font-size: 11px; line-height: 1;
+    background: transparent; border: 1px solid var(--line-soft); color: var(--ink-dim);
+  }
+  .cnt button:hover { color: var(--count); border-color: #6B4E2E; }
+  .cnt output {
+    min-width: 24px; text-align: center;
+    font-size: 11px; font-variant-numeric: tabular-nums;
+    color: var(--count);
+  }
+
+  /* param slider row */
+  .op-param {
+    display: flex; align-items: center; gap: var(--s2);
+    padding: 0 var(--s3) var(--s2) calc(var(--s3) + 30px);
+  }
+  .op-param .label { flex: none; min-width: 34px; }
+  .op-param output { flex: none; min-width: 46px; text-align: right; font-size: 11px; font-variant-numeric: tabular-nums; color: var(--ink-mid); }
+
+  input[type="range"] {
+    flex: 1 1 auto; min-width: 0;
+    -webkit-appearance: none; appearance: none;
+    height: 2px; border-radius: 2px;
+    background: var(--line);
+    cursor: pointer;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none;
+    width: 11px; height: 11px; border-radius: 50%;
+    background: var(--signal); border: none; cursor: pointer;
+  }
+  input[type="range"]::-moz-range-thumb {
+    width: 11px; height: 11px; border-radius: 50%;
+    background: var(--signal); border: none; cursor: pointer;
+  }
+  .op:not(.on) input[type="range"]::-webkit-slider-thumb { background: var(--ink-faint); }
+  .op:not(.on) input[type="range"]::-moz-range-thumb { background: var(--ink-faint); }
+
+  /* expandable detail */
+  .op-detail { display: none; border-top: 1px solid var(--line-soft); background: var(--sunk); padding: var(--s3); }
+  .op.open .op-detail { display: block; }
+  .op-map {
+    border: 1px solid var(--line-soft); border-radius: 3px;
+    display: block; width: 100%; height: 148px;
+    margin-bottom: var(--s3);
+  }
+  .op-detail .prose { font-size: 12px; margin: 0 0 var(--s2); }
+  .op-detail code {
+    display: block;
+    font-family: var(--mono); font-size: 11px;
+    color: var(--signal);
+    background: #0F141A;
+    border-left: 2px solid var(--signal-lo);
+    padding: var(--s2) var(--s3);
+    margin: 0 0 var(--s2);
+    white-space: pre;
+    overflow-x: auto;
+  }
+  .op-detail dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 2px var(--s3); font-size: 11px; }
+  .op-detail dt { color: var(--ink-dim); text-transform: uppercase; letter-spacing: 0.1em; font-size: 10px; padding-top: 2px; }
+  .op-detail dd { margin: 0; color: var(--ink-mid); }
+  .op-detail dd em { color: var(--ink-faint); font-style: normal; }
+
+  /* --- stage ------------------------------------------------------ */
+  .stage { position: sticky; top: var(--s4); display: flex; flex-direction: column; gap: var(--s3); }
+  .screen {
+    position: relative;
+    aspect-ratio: 16 / 10;
+    background: var(--sunk);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  #gl { display: block; width: 100%; height: 100%; }
+  .err {
+    position: absolute; inset: 0;
+    display: none; overflow: auto;
+    padding: var(--s4);
+    background: rgba(10, 13, 18, 0.94);
+    color: var(--bad);
+    font-size: 11px; white-space: pre-wrap;
+  }
+  .err.show { display: block; }
+
+  .globals {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: var(--s2) var(--s4);
+    background: var(--panel);
+    border: 1px solid var(--line-soft);
+    border-radius: 4px;
+    padding: var(--s3) var(--s4);
+  }
+  .g { display: flex; align-items: center; gap: var(--s2); }
+  .g .label { flex: none; min-width: 62px; }
+  .g output { flex: none; min-width: 40px; text-align: right; font-size: 11px; font-variant-numeric: tabular-nums; color: var(--ink-mid); }
+  .g select { flex: 1 1 auto; min-width: 0; padding: 4px 6px; }
+
+  /* --- source drawer ---------------------------------------------- */
+  .source { margin-top: var(--s5); }
+  .source-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s3); margin-bottom: var(--s2); }
+  pre {
+    margin: 0;
+    background: var(--sunk);
+    border: 1px solid var(--line-soft);
+    border-radius: 4px;
+    padding: var(--s4);
+    overflow-x: auto;
+    font-size: 11.5px;
+    line-height: 1.6;
+    color: var(--ink-mid);
+    max-height: 460px;
+    overflow-y: auto;
+  }
+  pre .k { color: var(--signal); }
+  pre .c { color: var(--ink-faint); }
+  pre .n { color: var(--count); }
+
+  /* --- notes ------------------------------------------------------ */
+  .notes { margin-top: var(--s6); border-top: 1px solid var(--line); padding-top: var(--s5); }
+  .notes h2 { font-size: 13px; letter-spacing: 0.16em; text-transform: uppercase; margin: 0 0 var(--s3); color: var(--ink); }
+  .note-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: var(--s5); }
+  .notes p { margin: 0 0 var(--s3); }
+  .notes strong { color: var(--ink); font-weight: 600; }
+  .tally { width: 100%; border-collapse: collapse; font-size: 11.5px; }
+  .tally th, .tally td { text-align: left; padding: 5px 10px 5px 0; border-bottom: 1px solid var(--line-soft); }
+  .tally th { color: var(--ink-dim); font-weight: 400; font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; }
+  .tally td:last-child { text-align: right; font-variant-numeric: tabular-nums; color: var(--count); padding-right: 0; }
+  .tally td.zero { color: var(--signal); }
+
+  @media (max-width: 980px) {
+    main { grid-template-columns: minmax(0, 1fr); }
+    .stage { position: static; order: -1; }
+    .op.open .op-detail { grid-template-columns: minmax(0, 1fr); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; }
+  }
+</style>
+
+<div class="shell">
+  <header>
+    <div>
+      <h1>Fold <span>Lab</span></h1>
+      <p class="sub">Every shader in the set is a stack of domain folds wrapped in a shading rule. Toggle the folds, set how many times each one runs per iteration, reorder them, and read the GLSL as it rebuilds.</p>
+    </div>
+    <div class="toolbar">
+      <select id="preset" aria-label="Preset">
+        <option value="">Load preset…</option>
+      </select>
+      <button id="shuffle">Randomise</button>
+      <button id="copy" class="primary">Copy GLSL</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="rail" aria-label="Operator pipeline">
+      <div class="rail-head">
+        <span class="label">Pipeline — runs top to bottom, once per iteration</span>
+      </div>
+      <div class="pipeline" id="pipeline"></div>
+    </section>
+
+    <section class="stage" aria-label="Output">
+      <div class="screen">
+        <canvas id="gl"></canvas>
+        <div class="err" id="err" role="alert"></div>
+      </div>
+      <div class="globals">
+        <div class="g">
+          <span class="label" id="l-shade">Shading</span>
+          <select id="shade" aria-labelledby="l-shade"></select>
+        </div>
+        <div class="g">
+          <span class="label" id="l-pal">Palette</span>
+          <select id="pal" aria-labelledby="l-pal"></select>
+        </div>
+        <div class="g">
+          <span class="label"><label for="iter">Iterations</label></span>
+          <input type="range" id="iter" min="1" max="16" step="1" value="8">
+          <output id="o-iter" class="num">8</output>
+        </div>
+        <div class="g">
+          <span class="label"><label for="zoom">Zoom</label></span>
+          <input type="range" id="zoom" min="0.25" max="3" step="0.01" value="1">
+          <output id="o-zoom" class="num">1.00</output>
+        </div>
+        <div class="g">
+          <span class="label"><label for="speed">Speed</label></span>
+          <input type="range" id="speed" min="0" max="2" step="0.01" value="0.6">
+          <output id="o-speed" class="num">0.60</output>
+        </div>
+        <div class="g">
+          <span class="label">Frame</span>
+          <output id="o-fps" class="num">—</output>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <section class="source">
+    <div class="source-head">
+      <span class="label">Assembled fragment shader — paste straight into index.html</span>
+      <span class="label num" id="o-lines"></span>
+    </div>
+    <pre id="src" tabindex="0"></pre>
+  </section>
+
+  <section class="notes">
+    <h2>How to read this</h2>
+    <div class="note-grid">
+      <div>
+        <p class="prose"><strong>Toggle</strong> switches an operator in or out of the loop. <strong>×N</strong> is how many times that same line runs back-to-back within one iteration — two circle inversions in a row is a genuinely different map from one, not just a stronger one. <strong>↑↓</strong> reorders: folding then rotating is not the same map as rotating then folding, and that ordering is where a lot of unexplored territory sits.</p>
+        <p class="prose">The thumbnail on each expanded operator draws a square grid pushed through that operator alone, at your current count, frozen at one instant. It shows the deformation, not the final image.</p>
+        <p class="prose">The <strong>shading rule</strong> is the other half of the identity. Nine of the sixteen shaders in the set use the same additive <em>glow</em> rule, which is why they share a look regardless of their geometry. Switching to orbit trap, SDF or density changes the image more than any fold does.</p>
+      </div>
+      <div>
+        <p class="label" style="margin-bottom:8px">Operator use across the 16 shaders in index.html</p>
+        <table class="tally">
+          <thead><tr><th>Operator</th><th>Shading rule</th><th>Uses</th></tr></thead>
+          <tbody id="tally"></tbody>
+        </table>
+        <p class="prose" style="margin-top:16px">Zero-use rows are open ground. A count of one usually means the single shader written to demonstrate it.</p>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script>
+"use strict";
+
+/* =====================================================================
+   1. OPERATOR VOCABULARY
+   Each entry carries: the GLSL it emits, a JS twin used to draw the
+   domain-map thumbnail, and the teaching copy. The JS twin must mirror
+   the GLSL exactly or the thumbnail lies.
+   ===================================================================== */
+
+const f = n => n.toFixed(4);
+const fr = x => x - Math.floor(x);
+const md = (a, b) => a - b * Math.floor(a / b);
+
+const OPS = [
+  {
+    id: "inversion",
+    name: "Circle inversion",
+    on: true, count: 1, param: 0.62,
+    min: 0.05, max: 1.30, step: 0.01, unit: "c",
+    glsl: v => `uv = uv / dot(uv, uv) - vec2(${f(v)});`,
+    js: (p, c) => {
+      const d = p.x * p.x + p.y * p.y;
+      if (d < 1e-9) return { x: 1e5, y: 1e5 };
+      return { x: p.x / d - c, y: p.y / d - c };
+    },
+    blurb: "Turns the plane inside out through the unit circle — everything outside collapses toward the origin, everything inside is flung out past it. The constant offset afterwards is what stops it from being an involution and lets it build structure over iterations.",
+    look: "Curved and lens-like. Detail crowds into rings around the origin and thins toward the edges.",
+    used: "GLITCHGEOM · PARASPASM · GLITCHSPASM · ECHOPULSE"
+  },
+  {
+    id: "boxfold",
+    name: "Box fold",
+    on: false, count: 1, param: 0.80,
+    min: 0.05, max: 1.50, step: 0.01, unit: "c",
+    glsl: v => `uv = abs(uv) - vec2(${f(v)});`,
+    js: (p, c) => ({ x: Math.abs(p.x) - c, y: Math.abs(p.y) - c }),
+    blurb: "Mirrors both half-planes onto the positive quadrant, then shifts back. The cheapest fold there is, and the backbone of most KIFS work — straight creases rather than curves.",
+    look: "Hard axis-aligned creases, rectilinear filigree, strong four-fold symmetry.",
+    used: "CYBERMORPH57 · ORBIT TRAP"
+  },
+  {
+    id: "fractgrid",
+    name: "Fract grid",
+    on: false, count: 1, param: 1.62,
+    min: 1.05, max: 3.00, step: 0.01, unit: "s",
+    glsl: v => `uv = fract(uv * ${f(v)}) - 0.5;`,
+    js: (p, s) => ({ x: fr(p.x * s) - 0.5, y: fr(p.y * s) - 0.5 }),
+    blurb: "Scales up, then keeps only the fractional part — every cell of the grid becomes a fresh copy of the whole domain. Self-similarity by tiling rather than by escape.",
+    look: "A lattice of identical tiles, each one nesting the next level inside it. Visible seams along cell borders.",
+    used: "BONE  (and the retired VOID shader)"
+  },
+  {
+    id: "modrepeat",
+    name: "Mod repeat",
+    on: false, count: 1, param: 1.00,
+    min: 0.25, max: 2.00, step: 0.01, unit: "s",
+    glsl: v => `uv = mod(uv + ${f(v * 0.5)}, ${f(v)}) - ${f(v * 0.5)};`,
+    js: (p, s) => ({ x: md(p.x + s * 0.5, s) - s * 0.5, y: md(p.y + s * 0.5, s) - s * 0.5 }),
+    blurb: "Like the fract grid but without the scale-up: it tiles space at a fixed cell size, so it repeats the domain instead of recursing into it. Useful as a trap grid laid under some other fold.",
+    look: "Even, non-nesting tiling. Reads as wallpaper until another operator distorts it.",
+    used: "DENSITY"
+  },
+  {
+    id: "polarmirror",
+    name: "Polar mirror",
+    on: false, count: 1, param: 7,
+    min: 2, max: 16, step: 1, unit: "n",
+    glsl: v => {
+      const n = Math.round(v);
+      return `{ float r = length(uv); float a = atan(uv.y, uv.x);\n  float seg = 6.28318 / ${f(n)};\n  a = abs(mod(a + seg * 0.5, seg) - seg * 0.5);\n  uv = r * vec2(cos(a), sin(a)); }`;
+    },
+    js: (p, n) => {
+      n = Math.max(2, Math.round(n));
+      const seg = (2 * Math.PI) / n;
+      const r = Math.hypot(p.x, p.y);
+      let a = Math.atan2(p.y, p.x);
+      a = Math.abs(md(a + seg * 0.5, seg) - seg * 0.5);
+      return { x: r * Math.cos(a), y: r * Math.sin(a) };
+    },
+    blurb: "Wraps the angle into a single wedge of 1/n turn and mirrors it. This is the only operator here that produces true n-fold rotational symmetry — no amount of inversion or box folding will ever give you a seven-pointed figure.",
+    look: "Mandala. Everything radiates from the origin in n identical, mirrored spokes.",
+    used: "KALEIDO"
+  },
+  {
+    id: "logpolar",
+    name: "Log-polar",
+    on: false, count: 1, param: 1.20,
+    min: 0.30, max: 2.00, step: 0.01, unit: "k",
+    glsl: v => `{ float r = length(uv); float a = atan(uv.y, uv.x);\n  uv = vec2(log(max(r, 0.0008)) * ${f(v)}, a * 0.9549); }`,
+    js: (p, k) => {
+      const r = Math.hypot(p.x, p.y);
+      const a = Math.atan2(p.y, p.x);
+      return { x: Math.log(Math.max(r, 0.0008)) * k, y: a * 0.9549 };
+    },
+    blurb: "Takes the logarithm of the radius, which turns scaling into plain translation. Anything periodic you draw afterwards becomes an infinite self-similar zoom — the Droste effect — and it animates for free by sliding along one axis.",
+    look: "Spiral tunnels and endless zoom. Straight lines in the new space are logarithmic spirals in the old one.",
+    used: "DROSTE"
+  },
+  {
+    id: "sierpinski",
+    name: "Sierpinski fold",
+    on: false, count: 1, param: 1.92,
+    min: 1.20, max: 2.40, step: 0.01, unit: "k",
+    glsl: v => `{ uv.x = abs(uv.x);\n  vec2 n = vec2(-0.5, 0.8660254);\n  uv -= 2.0 * min(0.0, dot(uv, n)) * n;\n  uv = uv * ${f(v)} - vec2(0.0, 1.0) * ${f(v - 1)}; }`,
+    js: (p, k) => {
+      let x = Math.abs(p.x), y = p.y;
+      const nx = -0.5, ny = 0.8660254;
+      const d = x * nx + y * ny;
+      if (d < 0) { x -= 2 * d * nx; y -= 2 * d * ny; }
+      return { x: x * k, y: y * k - (k - 1) };
+    },
+    blurb: "Reflects across the three mirror lines of an equilateral triangle, then scales about a vertex. The classic KIFS: at scale exactly 2 it reproduces the Sierpinski gasket, and detuning the scale off 2 is where the interesting near-misses live.",
+    look: "Triangular gasket, three-fold symmetry, dense hierarchical voids.",
+    used: "SIERPIN"
+  },
+  {
+    id: "conformal",
+    name: "Conformal z²",
+    on: false, count: 1, param: 1.00,
+    min: 0.00, max: 1.00, step: 0.01, unit: "mix",
+    glsl: v => `uv = mix(uv, vec2(uv.x * uv.x - uv.y * uv.y, 2.0 * uv.x * uv.y), ${f(v)});`,
+    js: (p, a) => ({
+      x: p.x + a * ((p.x * p.x - p.y * p.y) - p.x),
+      y: p.y + a * ((2 * p.x * p.y) - p.y)
+    }),
+    blurb: "Complex squaring — the engine inside every Mandelbrot and Julia set. It doubles angles about the origin and squares radii, and unlike the folds above it is smooth everywhere, so it preserves local angles while wildly distorting scale.",
+    look: "Doubling spirals and cardioid-shaped lobes. Escapes to infinity fast, so it pairs with an escape test.",
+    used: "FLESH · PARAFLESH · DENSITY"
+  },
+  {
+    id: "scale",
+    name: "Scale",
+    on: false, count: 1, param: 1.25,
+    min: 0.60, max: 2.00, step: 0.01, unit: "k",
+    glsl: v => `uv *= ${f(v)};`,
+    js: (p, k) => ({ x: p.x * k, y: p.y * k }),
+    blurb: "A plain uniform scale — and the operator that decides whether a stack becomes a fractal or a flat colour. Folds like abs() and the polar mirror can only ever shrink the domain, so with no scale above 1.0 the orbit contracts to a point and every pixel ends up with the same answer. Pair it with any fold to keep unpacking detail instead of collapsing.",
+    look: "Nothing by itself. Under 1.0 the image dissolves; over 1.0 each iteration opens a new level of detail.",
+    used: "KALEIDO · ORBIT TRAP · SIERPIN (rolled into its own scale term)"
+  },
+  {
+    id: "scalepulse",
+    name: "Scale pulse",
+    on: false, count: 1, param: 0.14,
+    min: 0.00, max: 0.50, step: 0.005, unit: "k",
+    glsl: v => `uv *= 1.0 + ${f(v)} * sin(t * 1.7 + length(uv) * 4.0);`,
+    js: (p, k, t) => {
+      const m = 1 + k * Math.sin(t * 1.7 + Math.hypot(p.x, p.y) * 4);
+      return { x: p.x * m, y: p.y * m };
+    },
+    blurb: "A radial breathing motion. Strictly an animator rather than a structure-maker — below about k = 0.05 it is invisible, which is exactly the trap three of the generated shaders fell into.",
+    look: "Slow inhale and exhale. Contributes nothing to a still frame.",
+    used: "FLESH · VOIDDRIVE · PARACORE · PARAFLESH · XENOCORE"
+  },
+  {
+    id: "wavewarp",
+    name: "Wave warp",
+    on: false, count: 1, param: 0.22,
+    min: 0.00, max: 0.50, step: 0.005, unit: "a",
+    glsl: v => `uv.x += ${f(v)} * sin(uv.y * 6.0 + t);\n        uv.y += ${f(v)} * cos(uv.x * 6.0 - t);`,
+    js: (p, a, t) => ({
+      x: p.x + a * Math.sin(p.y * 6 + t),
+      y: p.y + a * Math.cos(p.x * 6 - t)
+    }),
+    blurb: "Cross-couples the axes through a sine, shearing the plane into ripples. The single most common operator in the existing set — eight of the sixteen shaders use it, which is a good part of why they rhyme with one another.",
+    look: "Liquid, rippling edges. Softens every hard crease another operator makes.",
+    used: "8 of 16 shaders"
+  },
+  {
+    id: "rotate",
+    name: "Rotate",
+    on: true, count: 1, param: 0.35,
+    min: 0.00, max: 1.20, step: 0.01, unit: "spd",
+    glsl: v => `uv *= rot(t * ${f(v)} + fi * 0.7);`,
+    js: (p, s, t) => {
+      const a = t * s;
+      const c = Math.cos(a), si = Math.sin(a);
+      return { x: c * p.x - si * p.y, y: si * p.x + c * p.y };
+    },
+    blurb: "Not a fold at all, but it decides what the folds bite into. Because the angle carries the iteration index, each level is rotated differently and the stack stops being axis-aligned — this is what separates a lattice from a spiral.",
+    look: "On its own, nothing. Between two folds, it is the difference between a grid and a rosette.",
+    used: "15 of 16 shaders"
+  }
+];
+
+/* =====================================================================
+   2. SHADING RULES — the other half of a shader's identity
+   ===================================================================== */
+
+const SHADES = {
+  glow: {
+    name: "Glow accumulation",
+    init: "vec3 col = vec3(0.0);",
+    accum:
+`        float d = length(uv) * exp(-length(uv0) * 1.2);
+        d = abs(sin(d * 8.0 + t * 2.0) / 8.0);
+        col += PAL(length(uv0) + fi * 0.4 + t) * pow(0.013 / d, 1.35);`,
+    resolve: ""
+  },
+  trapCross: {
+    name: "Orbit trap — cross",
+    init: "vec3 col = vec3(0.0);\n    float tr = 1e9;",
+    accum: "        tr = min(tr, min(abs(uv.x), abs(uv.y)));",
+    resolve: "    col = PAL(tr * 2.6 + t * 0.35) * exp(-tr * 8.0);"
+  },
+  trapRing: {
+    name: "Orbit trap — ring",
+    init: "vec3 col = vec3(0.0);\n    float tr = 1e9;",
+    accum: "        tr = min(tr, abs(length(uv) - 0.5));",
+    resolve: "    col = PAL(tr * 2.2 + t * 0.30) * exp(-tr * 5.0);"
+  },
+  sdf: {
+    name: "SDF hard edge",
+    init: "vec3 col = vec3(0.0);\n    float sd = 1e9;",
+    accum: "        sd = min(sd, length(uv) - 0.5);",
+    resolve:
+`    float px = 2.0 / u_resolution.y;
+    float fill = smoothstep(px, -px, sd);
+    float edge = smoothstep(px * 2.5, 0.0, abs(sd) - px * 0.8);
+    col = mix(vec3(0.04, 0.05, 0.07), PAL(length(uv0) * 0.5 + t * 0.2), fill);
+    col = mix(col, vec3(1.0), edge * 0.85);`
+  },
+  density: {
+    name: "Density — posterised",
+    init: "vec3 col = vec3(0.0);\n    float hits = 0.0;",
+    // Cell-relative, not absolute. Plenty of operator stacks contract toward the
+    // origin, and a plain `length(uv) < r` test is then true on every iteration
+    // for every pixel - dens pins at 1.0 and the frame posterises to one flat
+    // colour. Folding into a unit cell first keeps the test discriminating
+    // whatever the stack does to the scale.
+    accum: "        hits += step(length(fract(uv) - 0.5), 0.32);",
+    resolve:
+`    float dens = hits / float(ITER);
+    col = PAL(dens * 0.9 + t * 0.15);
+    col = floor(col * 5.0) / 5.0;`
+  }
+};
+
+const PALETTES = {
+  signal: { name: "Signal",  a: [0.50, 0.50, 0.50], b: [0.50, 0.50, 0.50], c: [1.00, 1.00, 1.00], d: [0.00, 0.33, 0.67] },
+  ember:  { name: "Ember",   a: [0.50, 0.35, 0.25], b: [0.50, 0.40, 0.30], c: [1.00, 0.90, 0.70], d: [0.00, 0.15, 0.30] },
+  oxide:  { name: "Oxide",   a: [0.35, 0.45, 0.50], b: [0.40, 0.40, 0.45], c: [0.90, 1.00, 1.10], d: [0.30, 0.20, 0.50] },
+  bone:   { name: "Bone",    a: [0.78, 0.75, 0.70], b: [-0.24, -0.24, -0.20], c: [1.00, 1.00, 1.00], d: [0.00, 0.10, 0.20] },
+  violet: { name: "Violet",  a: [0.42, 0.38, 0.55], b: [0.45, 0.40, 0.42], c: [0.90, 1.00, 1.15], d: [0.35, 0.10, 0.62] }
+};
+
+/* =====================================================================
+   3. STATE
+   ===================================================================== */
+
+const state = {
+  order: OPS.map(o => o.id),
+  shade: "glow",
+  pal: "signal",
+  iter: 8,
+  zoom: 1.0,
+  speed: 0.6
+};
+
+const byId = Object.fromEntries(OPS.map(o => [o.id, o]));
+const orderedOps = () => state.order.map(id => byId[id]);
+
+// Presets list only the operators they switch on, in pipeline order; every
+// remaining operator keeps its place behind them. `on` maps id -> [count, param].
+const PRESETS = {
+  house: {
+    label: "House style (your current 8)",
+    shade: "glow", pal: "signal", iter: 8, zoom: 1.0,
+    order: ["inversion", "rotate", "wavewarp"],
+    on: { inversion: [1, 0.72], rotate: [1, 0.55], wavewarp: [1, 0.24] }
+  },
+  mandala: {
+    label: "Mandala — polar mirror",
+    shade: "trapRing", pal: "violet", iter: 8, zoom: 1.1,
+    order: ["polarmirror", "boxfold", "scale", "rotate"],
+    on: { polarmirror: [1, 5], boxfold: [1, 0.25], scale: [1, 1.40], rotate: [1, 0.30] }
+  },
+  droste: {
+    label: "Droste — log-polar zoom",
+    shade: "sdf", pal: "oxide", iter: 4, zoom: 1.0,
+    order: ["logpolar", "fractgrid", "rotate"],
+    on: { logpolar: [1, 1.15], fractgrid: [1, 1.30] }
+  },
+  gasket: {
+    label: "Gasket — Sierpinski KIFS",
+    shade: "sdf", pal: "ember", iter: 9, zoom: 1.3,
+    order: ["sierpinski", "rotate"],
+    on: { sierpinski: [1, 1.94], rotate: [1, 0.12] }
+  },
+  lattice: {
+    label: "Lattice — density banding",
+    shade: "density", pal: "bone", iter: 8, zoom: 0.9,
+    order: ["fractgrid", "rotate", "boxfold"],
+    on: { fractgrid: [1, 1.55], rotate: [1, 0.22], boxfold: [1, 0.30] }
+  },
+  doubled: {
+    label: "Doubled inversion (×2)",
+    shade: "trapCross", pal: "signal", iter: 6, zoom: 1.0,
+    order: ["inversion", "scale", "rotate"],
+    on: { inversion: [2, 0.48], scale: [1, 1.15], rotate: [1, 0.28] }
+  }
+};
+
+// Expand a preset's partial order into a full ordering of every operator.
+function fullOrder(partial) {
+  return partial.concat(OPS.map(o => o.id).filter(id => partial.indexOf(id) < 0));
+}
+
+/* =====================================================================
+   4. SHADER ASSEMBLY
+   ===================================================================== */
+
+function palGLSL() {
+  const p = PALETTES[state.pal];
+  const v = a => `vec3(${a.map(f).join(", ")})`;
+  return `vec3 palette(float x) {\n    return ${v(p.a)} + ${v(p.b)} * cos(6.28318 * (${v(p.c)} * x + ${v(p.d)}));\n}`;
+}
+
+function buildShader() {
+  const sh = SHADES[state.shade];
+  const lines = [];
+
+  for (const op of orderedOps()) {
+    if (!op.on) continue;
+    const body = op.glsl(op.param);
+    for (let k = 0; k < op.count; k++) {
+      lines.push("        " + body.replace(/\n/g, "\n        "));
+    }
+  }
+  const opBlock = lines.length ? lines.join("\n") : "        // no operators enabled — shading rule only";
+
+  return `precision highp float;
+uniform vec2  u_resolution;
+uniform float u_time;
+
+mat2 rot(float a) { float s = sin(a), c = cos(a); return mat2(c, -s, s, c); }
+
+${palGLSL()}
+
+void main() {
+    vec2 uv = (gl_FragCoord.xy * 2.0 - u_resolution.xy) / min(u_resolution.x, u_resolution.y);
+    uv *= ${f(state.zoom)};
+    vec2 uv0 = uv;
+    float t = u_time;
+
+    ${sh.init}
+
+    for (int i = 0; i < ${state.iter}; i++) {
+        float fi = float(i);
+${opBlock}
+        uv = clamp(uv, -1e4, 1e4);   // guard: runaway folds would go NaN
+${sh.accum}
+    }
+
+${sh.resolve}
+    gl_FragColor = vec4(clamp(col, 0.0, 1.0), 1.0);
+}`
+    .replace(/PAL\(/g, "palette(")
+    .replace(/float\(ITER\)/g, `${f(state.iter)}`);
+}
+
+/* =====================================================================
+   5. WEBGL
+   ===================================================================== */
+
+const canvas = document.getElementById("gl");
+const errBox = document.getElementById("err");
+const gl = canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
+
+let program = null, loc = {}, posBuf = null, vs = null;
+
+const VS = `attribute vec4 aPos; void main(){ gl_Position = aPos; }`;
+
+function mkShader(type, src) {
+  const s = gl.createShader(type);
+  gl.shaderSource(s, src);
+  gl.compileShader(s);
+  if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) {
+    const log = gl.getShaderInfoLog(s);
+    gl.deleteShader(s);
+    return { err: log };
+  }
+  return { shader: s };
+}
+
+function initGL() {
+  if (!gl) {
+    errBox.classList.add("show");
+    errBox.textContent = "WebGL is not available in this browser, so the live preview is off. The assembled GLSL below is still correct and copyable.";
+    return false;
+  }
+  const r = mkShader(gl.VERTEX_SHADER, VS);
+  vs = r.shader;
+  posBuf = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, posBuf);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, -1, 1, 1, -1, 1, 1]), gl.STATIC_DRAW);
+  return true;
+}
+
+function rebuild() {
+  const src = buildShader();
+  paintSource(src);
+
+  if (!gl) return;
+  const r = mkShader(gl.FRAGMENT_SHADER, src);
+  if (r.err) {
+    errBox.classList.add("show");
+    errBox.textContent = "Shader failed to compile — the previous program is still running.\n\n" + r.err;
+    return;
+  }
+  errBox.classList.remove("show");
+
+  const p = gl.createProgram();
+  gl.attachShader(p, vs);
+  gl.attachShader(p, r.shader);
+  gl.linkProgram(p);
+  if (!gl.getProgramParameter(p, gl.LINK_STATUS)) {
+    errBox.classList.add("show");
+    errBox.textContent = "Link failed:\n\n" + gl.getProgramInfoLog(p);
+    return;
+  }
+  if (program) gl.deleteProgram(program);
+  program = p;
+  loc = {
+    time: gl.getUniformLocation(p, "u_time"),
+    res: gl.getUniformLocation(p, "u_resolution"),
+    pos: gl.getAttribLocation(p, "aPos")
+  };
+}
+
+let clock = 0, last = 0, frames = 0, fpsAcc = 0;
+const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+function frame(now) {
+  requestAnimationFrame(frame);
+  if (!last) last = now;
+  let dt = now - last;
+  last = now;
+  if (dt > 100) dt = 16;
+  clock += dt * 0.001 * (reduced ? 0 : state.speed);
+
+  fpsAcc += dt; frames++;
+  if (fpsAcc > 500) {
+    document.getElementById("o-fps").textContent = (1000 / (fpsAcc / frames)).toFixed(0) + " fps";
+    fpsAcc = 0; frames = 0;
+  }
+
+  if (!gl || !program) return;
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const w = Math.round(canvas.clientWidth * dpr), h = Math.round(canvas.clientHeight * dpr);
+  if (w > 0 && h > 0 && (canvas.width !== w || canvas.height !== h)) { canvas.width = w; canvas.height = h; }
+
+  gl.viewport(0, 0, canvas.width, canvas.height);
+  gl.useProgram(program);
+  gl.bindBuffer(gl.ARRAY_BUFFER, posBuf);
+  gl.enableVertexAttribArray(loc.pos);
+  gl.vertexAttribPointer(loc.pos, 2, gl.FLOAT, false, 0, 0);
+  gl.uniform1f(loc.time, clock);
+  gl.uniform2f(loc.res, canvas.width, canvas.height);
+  gl.drawArrays(gl.TRIANGLES, 0, 6);
+}
+
+/* =====================================================================
+   6. SOURCE VIEW
+   ===================================================================== */
+
+const KEYWORDS = /\b(precision|highp|uniform|vec2|vec3|vec4|mat2|float|int|void|for|if|return|main|mix|clamp|abs|min|max|sin|cos|atan|log|exp|pow|mod|fract|floor|step|smoothstep|length|dot|gl_FragCoord|gl_FragColor)\b/g;
+
+function paintSource(src) {
+  const esc = src.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  const html = esc
+    .replace(/(\/\/[^\n]*)/g, '<span class="c">$1</span>')
+    .replace(KEYWORDS, '<span class="k">$&</span>')
+    .replace(/\b(\d+\.\d+|\d+e\d+)\b/g, '<span class="n">$&</span>');
+  document.getElementById("src").innerHTML = html;
+  document.getElementById("o-lines").textContent = src.split("\n").length + " lines";
+}
+
+/* =====================================================================
+   7. DOMAIN-MAP THUMBNAILS
+   ===================================================================== */
+
+function drawMap(cv, op) {
+  const ctx = cv.getContext("2d");
+  const W = cv.width, H = cv.height;
+  ctx.fillStyle = "#0A0D12";
+  ctx.fillRect(0, 0, W, H);
+
+  const VIEW = 1.9, EXT = 1.5, LINES = 9, SAMP = 110;
+  const ar = W / H;   // keep the deformation undistorted in a wide thumbnail
+  const px = v => ({ x: (v.x / (VIEW * ar) * 0.5 + 0.5) * W, y: (0.5 - v.y / VIEW * 0.5) * H });
+
+  ctx.lineWidth = Math.max(1, W / 200);
+  for (let axis = 0; axis < 2; axis++) {
+    ctx.strokeStyle = axis === 0 ? "rgba(111,214,196,0.60)" : "rgba(232,165,92,0.42)";
+    for (let l = 0; l < LINES; l++) {
+      const c = -EXT + (2 * EXT) * l / (LINES - 1);
+      ctx.beginPath();
+      let prev = null;
+      for (let s = 0; s <= SAMP; s++) {
+        const u = -EXT + (2 * EXT) * s / SAMP;
+        let p = axis === 0 ? { x: u, y: c } : { x: c, y: u };
+        for (let k = 0; k < op.count; k++) p = op.js(p, op.param, 1.0);
+        if (!isFinite(p.x) || !isFinite(p.y)) { prev = null; continue; }
+        const q = px(p);
+        if (prev && Math.hypot(q.x - prev.x, q.y - prev.y) < W * 0.3) ctx.lineTo(q.x, q.y);
+        else ctx.moveTo(q.x, q.y);
+        prev = q;
+      }
+      ctx.stroke();
+    }
+  }
+}
+
+/* =====================================================================
+   8. RAIL UI
+   ===================================================================== */
+
+const pipeline = document.getElementById("pipeline");
+const nodes = {};
+
+function buildRail() {
+  pipeline.innerHTML = "";
+  for (const op of orderedOps()) {
+    const el = document.createElement("div");
+    el.className = "op";
+    el.innerHTML = `
+      <div class="op-row">
+        <span class="op-idx num"></span>
+        <div class="op-move">
+          <button type="button" data-mv="-1" title="Move earlier" aria-label="Move ${op.name} earlier">▲</button>
+          <button type="button" data-mv="1" title="Move later" aria-label="Move ${op.name} later">▼</button>
+        </div>
+        <button type="button" class="op-name" aria-expanded="false">${op.name}</button>
+        <div class="cnt">
+          <button type="button" data-ct="-1" aria-label="Fewer applications of ${op.name}">−</button>
+          <output class="num">×1</output>
+          <button type="button" data-ct="1" aria-label="More applications of ${op.name}">+</button>
+        </div>
+        <button type="button" class="sw" role="switch" aria-checked="false" aria-label="Enable ${op.name}"></button>
+      </div>
+      <div class="op-param">
+        <span class="label">${op.unit}</span>
+        <input type="range" min="${op.min}" max="${op.max}" step="${op.step}" value="${op.param}" aria-label="${op.name} ${op.unit}">
+        <output class="num"></output>
+      </div>
+      <div class="op-detail">
+        <canvas class="op-map" width="760" height="296"></canvas>
+        <div>
+          <p class="prose">${op.blurb}</p>
+          <code>${op.glsl(op.param).replace(/&/g, "&amp;").replace(/</g, "&lt;")}</code>
+          <dl>
+            <dt>Reads as</dt><dd>${op.look}</dd>
+            <dt>Used by</dt><dd><em>${op.used}</em></dd>
+          </dl>
+        </div>
+      </div>`;
+
+    const n = {
+      el,
+      idx: el.querySelector(".op-idx"),
+      sw: el.querySelector(".sw"),
+      cntOut: el.querySelector(".cnt output"),
+      range: el.querySelector('input[type="range"]'),
+      paramOut: el.querySelector(".op-param output"),
+      code: el.querySelector("code"),
+      map: el.querySelector(".op-map"),
+      nameBtn: el.querySelector(".op-name")
+    };
+    nodes[op.id] = n;
+
+    n.sw.addEventListener("click", () => { op.on = !op.on; sync(op); renumber(); rebuild(); });
+    n.nameBtn.addEventListener("click", () => {
+      const open = el.classList.toggle("open");
+      n.nameBtn.setAttribute("aria-expanded", String(open));
+      if (open) drawMap(n.map, op);
+    });
+    n.range.addEventListener("input", e => {
+      op.param = parseFloat(e.target.value);
+      sync(op);
+      rebuild();
+    });
+    el.querySelectorAll("[data-ct]").forEach(b => b.addEventListener("click", () => {
+      op.count = Math.min(4, Math.max(1, op.count + parseInt(b.dataset.ct, 10)));
+      op.on = true;
+      sync(op);
+      renumber();
+      rebuild();
+    }));
+    el.querySelectorAll("[data-mv]").forEach(b => b.addEventListener("click", () => {
+      const i = state.order.indexOf(op.id);
+      const j = i + parseInt(b.dataset.mv, 10);
+      if (j < 0 || j >= state.order.length) return;
+      state.order.splice(i, 1);
+      state.order.splice(j, 0, op.id);
+      buildRail();
+      rebuild();
+      nodes[op.id].nameBtn.focus();
+    }));
+
+    pipeline.appendChild(el);
+    sync(op);
+  }
+  renumber();
+}
+
+function sync(op) {
+  const n = nodes[op.id];
+  if (!n) return;
+  n.el.classList.toggle("on", op.on);
+  n.sw.setAttribute("aria-checked", String(op.on));
+  n.cntOut.textContent = "×" + op.count;
+  n.range.value = op.param;
+  n.paramOut.textContent = op.step >= 1 ? String(Math.round(op.param)) : op.param.toFixed(2);
+  n.code.textContent = op.glsl(op.param);
+  if (n.el.classList.contains("open")) drawMap(n.map, op);
+}
+
+function renumber() {
+  let k = 0;
+  for (const op of orderedOps()) {
+    const n = nodes[op.id];
+    n.idx.textContent = op.on ? String(++k) : "·";
+  }
+}
+
+/* =====================================================================
+   9. GLOBALS + TOOLBAR
+   ===================================================================== */
+
+function fillSelect(el, entries, current) {
+  el.innerHTML = "";
+  for (const [k, label] of entries) {
+    const o = document.createElement("option");
+    o.value = k; o.textContent = label;
+    if (k === current) o.selected = true;
+    el.appendChild(o);
+  }
+}
+
+const shadeSel = document.getElementById("shade");
+const palSel = document.getElementById("pal");
+fillSelect(shadeSel, Object.entries(SHADES).map(([k, v]) => [k, v.name]), state.shade);
+fillSelect(palSel, Object.entries(PALETTES).map(([k, v]) => [k, v.name]), state.pal);
+fillSelect(document.getElementById("preset"),
+  [["", "Load preset…"]].concat(Object.entries(PRESETS).map(([k, v]) => [k, v.label])), "");
+
+shadeSel.addEventListener("change", e => { state.shade = e.target.value; rebuild(); });
+palSel.addEventListener("change", e => { state.pal = e.target.value; rebuild(); });
+
+function bindGlobal(id, key, fmt) {
+  const el = document.getElementById(id);
+  const out = document.getElementById("o-" + id);
+  el.addEventListener("input", e => {
+    state[key] = parseFloat(e.target.value);
+    out.textContent = fmt(state[key]);
+    rebuild();
+  });
+  out.textContent = fmt(state[key]);
+  el.value = state[key];
+}
+bindGlobal("iter", "iter", v => String(Math.round(v)));
+bindGlobal("zoom", "zoom", v => v.toFixed(2));
+bindGlobal("speed", "speed", v => v.toFixed(2));
+
+document.getElementById("preset").addEventListener("change", e => {
+  const p = PRESETS[e.target.value];
+  if (!p) return;
+  state.order = fullOrder(p.order);
+  state.shade = p.shade; state.pal = p.pal; state.iter = p.iter; state.zoom = p.zoom;
+  for (const op of OPS) {
+    const cfg = p.on[op.id];
+    op.on = !!cfg;
+    if (cfg) { op.count = cfg[0]; op.param = cfg[1]; }
+  }
+  reflectGlobals();
+  buildRail();
+  rebuild();
+});
+
+function reflectGlobals() {
+  shadeSel.value = state.shade;
+  palSel.value = state.pal;
+  document.getElementById("iter").value = state.iter;
+  document.getElementById("o-iter").textContent = String(state.iter);
+  document.getElementById("zoom").value = state.zoom;
+  document.getElementById("o-zoom").textContent = state.zoom.toFixed(2);
+}
+
+const rnd = (a, b) => a + Math.random() * (b - a);
+const pick = arr => arr[Math.floor(Math.random() * arr.length)];
+
+document.getElementById("shuffle").addEventListener("click", () => {
+  // Sample OPERATORS, not just constants — the whole point of the exercise.
+  const structural = ["inversion", "boxfold", "fractgrid", "modrepeat", "polarmirror", "logpolar", "sierpinski", "conformal"];
+  const chosen = new Set();
+  chosen.add(pick(structural));
+  if (Math.random() < 0.55) chosen.add(pick(structural));
+  chosen.add("scale");   // without it, shrinking folds collapse to a flat frame
+  if (Math.random() < 0.75) chosen.add("rotate");
+  if (Math.random() < 0.40) chosen.add("wavewarp");
+  if (Math.random() < 0.20) chosen.add("scalepulse");
+
+  for (const op of OPS) {
+    op.on = chosen.has(op.id);
+    op.count = Math.random() < 0.25 ? 2 : 1;
+    op.param = op.id === "scale"
+      ? parseFloat(rnd(1.05, 1.70).toFixed(3))          // keep it expanding
+      : op.step >= 1
+        ? Math.round(rnd(op.min, op.max))
+        : parseFloat(rnd(op.min + (op.max - op.min) * 0.15, op.max).toFixed(3));
+  }
+  state.order = state.order.slice().sort(() => Math.random() - 0.5);
+  state.shade = pick(Object.keys(SHADES));
+  state.pal = pick(Object.keys(PALETTES));
+  state.iter = Math.round(rnd(3, 12));
+  state.zoom = parseFloat(rnd(0.7, 1.6).toFixed(2));
+  document.getElementById("preset").value = "";
+  reflectGlobals();
+  buildRail();
+  rebuild();
+});
+
+document.getElementById("copy").addEventListener("click", async e => {
+  const btn = e.currentTarget;
+  const orig = btn.textContent;
+  try {
+    await navigator.clipboard.writeText(buildShader());
+    btn.textContent = "Copied";
+  } catch {
+    btn.textContent = "Select the code below";
+  }
+  setTimeout(() => { btn.textContent = orig; }, 1600);
+});
+
+/* =====================================================================
+   10. TALLY TABLE — measured against the 16 shaders in index.html
+   ===================================================================== */
+
+const TALLY = [
+  ["Wave warp", 8], ["Rotate", 15], ["Scale pulse", 5], ["Circle inversion", 4],
+  ["Scale", 3], ["Conformal z²", 3], ["Box fold", 2], ["Fract grid", 1],
+  ["Mod repeat", 1], ["Polar mirror", 1], ["Log-polar", 1], ["Sierpinski fold", 1]
+];
+const TALLY_SHADE = [
+  ["Glow accumulation", 10], ["SDF hard edge", 2], ["Orbit trap", 1], ["Density", 1], ["Bespoke ramp", 2]
+];
+const tallyBody = document.getElementById("tally");
+const rows = Math.max(TALLY.length, TALLY_SHADE.length);
+for (let i = 0; i < rows; i++) {
+  const tr = document.createElement("tr");
+  const op = TALLY[i], sh = TALLY_SHADE[i];
+  tr.innerHTML =
+    `<td>${op ? op[0] : ""}</td>` +
+    `<td style="color:var(--ink-dim)">${sh ? sh[0] + " <span style='color:var(--count)'>" + sh[1] + "</span>" : ""}</td>` +
+    `<td class="${op && op[1] <= 1 ? "zero" : ""}">${op ? op[1] : ""}</td>`;
+  tallyBody.appendChild(tr);
+}
+
+/* =====================================================================
+   11. BOOT
+   ===================================================================== */
+
+buildRail();
+initGL();
+rebuild();
+requestAnimationFrame(frame);
+</script>
