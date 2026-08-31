@@ -141,27 +141,282 @@
             text-shadow: 0 0 15px #ffeb3b;
         }
 
-        #fav-tab-btn {
+        #nav-tabs {
             position: absolute;
-            top: 30px;
-            left: 30px;
-            font-size: 1.2rem;
-            color: rgba(255, 255, 255, 0.5);
+            top: 25px;
+            left: 25px;
+            z-index: 35;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .nav-btn {
+            font-family: inherit;
+            font-size: 0.95rem;
+            color: #888;
             cursor: pointer;
-            z-index: 30;
-            transition: all 0.3s;
+            transition: color 0.15s, border-color 0.15s, background-color 0.15s;
             text-transform: uppercase;
             letter-spacing: 0.1rem;
             user-select: none;
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            padding: 8px 16px;
-            border-radius: 4px;
+            border: 1px solid #333;
+            padding: 8px 14px;
+            border-radius: 2px;
+            background: #0a0a0a;
+            text-align: left;
         }
 
-        #fav-tab-btn:hover {
+        .nav-btn:hover {
+            color: #fff;
+            border-color: #666;
+            background: #181818;
+        }
+
+        .nav-btn.active {
             color: #fff;
             border-color: #fff;
-            background: rgba(255, 255, 255, 0.1);
+            background: #222;
+            font-weight: bold;
+        }
+
+        /* --- Laboratory Synthesizer Panel --- */
+        #lab-panel {
+            position: absolute;
+            top: 155px;
+            left: 25px;
+            bottom: 25px;
+            width: 440px;
+            max-width: calc(100vw - 50px);
+            background: #0d0d0d;
+            border: 1px solid #333;
+            border-radius: 2px;
+            z-index: 35;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.8);
+            transition: opacity 0.2s ease, transform 0.2s ease;
+            opacity: 0;
+            pointer-events: none;
+            transform: translateY(6px);
+            color: #eee;
+        }
+
+        #lab-panel.open {
+            opacity: 1;
+            pointer-events: auto;
+            transform: translateY(0);
+        }
+
+        .lab-panel-header {
+            padding: 12px 14px;
+            background: #161616;
+            border-bottom: 1px solid #333;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .lab-panel-title {
+            font-size: 0.9rem;
+            font-weight: bold;
+            letter-spacing: 0.12rem;
+            color: #fff;
+            text-transform: uppercase;
+        }
+
+        .lab-toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            padding: 10px 14px;
+            background: #111;
+            border-bottom: 1px solid #282828;
+        }
+
+        .lab-btn {
+            flex: 1 1 auto;
+            min-width: 70px;
+            background: #181818;
+            border: 1px solid #333;
+            color: #ccc;
+            padding: 7px 10px;
+            border-radius: 2px;
+            font-family: inherit;
+            font-size: 0.75rem;
+            letter-spacing: 0.06rem;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: background 0.15s, border-color 0.15s, color 0.15s;
+            text-align: center;
+        }
+
+        .lab-btn:hover {
+            border-color: #777;
+            color: #fff;
+            background: #252525;
+        }
+
+        .lab-btn.accent {
+            background: #2a2a2a;
+            border-color: #555;
+            color: #fff;
+            font-weight: bold;
+        }
+
+        .lab-btn.accent:hover {
+            background: #383838;
+            border-color: #888;
+        }
+
+        .lab-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            background: #0d0d0d;
+        }
+
+        .lab-body::-webkit-scrollbar {
+            width: 6px;
+        }
+        .lab-body::-webkit-scrollbar-track {
+            background: #111;
+        }
+        .lab-body::-webkit-scrollbar-thumb {
+            background: #333;
+        }
+        .lab-body::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+
+        .config-card {
+            background: #141414;
+            border: 1px solid #282828;
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .config-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            background: #1c1c1c;
+            border-bottom: 1px solid #282828;
+            font-size: 0.8rem;
+            letter-spacing: 0.08rem;
+            text-transform: uppercase;
+            color: #fff;
+            font-weight: bold;
+        }
+
+        .config-card-header span.tag {
+            font-size: 0.7rem;
+            color: #777;
+            font-weight: normal;
+        }
+
+        .config-card-body {
+            padding: 10px 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 9px;
+        }
+
+        .knob-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+        }
+
+        .knob-label {
+            font-size: 0.78rem;
+            color: #aaa;
+            text-transform: uppercase;
+            letter-spacing: 0.06rem;
+            width: 125px;
+            flex-shrink: 0;
+        }
+
+        .knob-control {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex: 1;
+        }
+
+        .knob-slider {
+            flex: 1;
+            height: 4px;
+            background: #2a2a2a;
+            border-radius: 2px;
+            outline: none;
+            -webkit-appearance: none;
+            cursor: pointer;
+        }
+
+        .knob-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #fff;
+            cursor: pointer;
+        }
+
+        .knob-num {
+            background: #181818;
+            border: 1px solid #333;
+            color: #fff;
+            padding: 3px 6px;
+            font-family: inherit;
+            font-size: 0.78rem;
+            border-radius: 2px;
+            width: 52px;
+            text-align: right;
+            outline: none;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .knob-num:focus {
+            border-color: #888;
+        }
+
+        .select-input {
+            width: 100%;
+            background: #181818;
+            border: 1px solid #333;
+            color: #fff;
+            padding: 6px 10px;
+            font-family: inherit;
+            font-size: 0.8rem;
+            border-radius: 2px;
+            outline: none;
+            cursor: pointer;
+        }
+
+        .select-input:focus {
+            border-color: #888;
+        }
+
+        .palette-preview-bar {
+            width: 100%;
+            height: 14px;
+            border-radius: 2px;
+            border: 1px solid #333;
+            margin: 2px 0 4px;
+            background: linear-gradient(to right, red, purple, blue, cyan, green, yellow, red);
+        }
+
+        .gallery-only.hidden {
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
         }
 
         #speed-control {
@@ -418,11 +673,316 @@
 
 <body>
     <div id="overlay">V O I D</div>
-    <div id="instructions">◄ Left / Right Arrows to Traverse ►</div>
-    <div id="carousel"></div>
+    <div id="instructions" class="gallery-only">◄ Left / Right Arrows to Traverse ►</div>
+    <div id="carousel" class="gallery-only"></div>
+
+    <!-- Top-Left Nav Group -->
+    <div id="nav-tabs">
+        <div id="fav-tab-btn" class="nav-btn">Favorites</div>
+        <div id="tab-btn-gallery" class="nav-btn active" onclick="switchMainTab('gallery')">Gallery</div>
+        <div id="tab-btn-lab" class="nav-btn" onclick="switchMainTab('lab')">Laboratory</div>
+    </div>
+
+    <!-- Laboratory Synthesizer Panel -->
+    <div id="lab-panel">
+        <div class="lab-panel-header">
+            <div class="lab-panel-title">LABORATORY</div>
+            <div id="lab-status-badge" style="font-size: 0.75rem; color: #888; letter-spacing: 0.1rem;">60 FPS // LIVE</div>
+        </div>
+
+        <div class="lab-toolbar">
+            <button class="lab-btn accent" onclick="randomizeLab()">Randomize</button>
+            <button class="lab-btn" onclick="mutateLab()">Mutate</button>
+            <button class="lab-btn" onclick="forkCurrentGallerySlide()">Fork Gallery</button>
+            <button class="lab-btn" onclick="saveLabAsFavorite()">Save Fav</button>
+            <button class="lab-btn" onclick="copyLabGLSL()">Copy GLSL</button>
+            <button class="lab-btn" onclick="resetLab()">Reset</button>
+        </div>
+
+        <div class="lab-body">
+            <!-- 1. OPERATOR & SPACE FOLDING -->
+            <div class="config-card">
+                <div class="config-card-header">
+                    <span>1. Operator & Space Folding</span>
+                    <span class="tag">GEOMETRY</span>
+                </div>
+                <div class="config-card-body">
+                    <div class="knob-row">
+                        <span class="knob-label">Family / Type</span>
+                        <div class="knob-control">
+                            <select id="lab-sel-fold_type" class="select-input" onchange="onLabSelectChange('fold_type', this.value)">
+                                <option value="inversion">Circle Inversion (uv / dot(uv,uv))</option>
+                                <option value="abs_box">Abs Box-Fold (|uv| - c)</option>
+                                <option value="julia">Julia Set Orbit (z^2 + c)</option>
+                                <option value="polar_kaleido">N-Fold Polar Mirror</option>
+                                <option value="droste">Log-Polar Droste Zoom</option>
+                                <option value="sierpinski">Sierpinski Reflection</option>
+                                <option value="fract_grid">Repeating Lattice Grid</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="knob-row">
+                        <span class="knob-label">Offset X (c_x)</span>
+                        <div class="knob-control">
+                            <input type="range" class="knob-slider" id="lab-slider-fold_offset_x" min="-2.0" max="2.0" step="0.005" value="0.724" oninput="onLabKnobChange('fold_offset_x', this.value)">
+                            <input type="number" class="knob-num" id="lab-num-fold_offset_x" step="0.01" value="0.72" onchange="onLabNumChange('fold_offset_x', this.value)">
+                        </div>
+                    </div>
+                    <div class="knob-row">
+                        <span class="knob-label">Offset Y (c_y)</span>
+                        <div class="knob-control">
+                            <input type="range" class="knob-slider" id="lab-slider-fold_offset_y" min="-2.0" max="2.0" step="0.005" value="0.724" oninput="onLabKnobChange('fold_offset_y', this.value)">
+                            <input type="number" class="knob-num" id="lab-num-fold_offset_y" step="0.01" value="0.72" onchange="onLabNumChange('fold_offset_y', this.value)">
+                        </div>
+                    </div>
+                    <div class="knob-row">
+                        <span class="knob-label">Step Scale</span>
+                        <div class="knob-control">
+                            <input type="range" class="knob-slider" id="lab-slider-fold_scale" min="0.2" max="3.0" step="0.01" value="1.20" oninput="onLabKnobChange('fold_scale', this.value)">
+                            <input type="number" class="knob-num" id="lab-num-fold_scale" step="0.01" value="1.20" onchange="onLabNumChange('fold_scale', this.value)">
+                        </div>
+                    </div>
+                    <div class="knob-row">
+                        <span class="knob-label">Symmetry (N)</span>
+                        <div class="knob-control">
+                            <input type="range" class="knob-slider" id="lab-slider-sym_sectors" min="3" max="16" step="1" value="7" oninput="onLabKnobChange('sym_sectors', this.value)">
+                            <input type="number" class="knob-num" id="lab-num-sym_sectors" step="1" value="7" onchange="onLabNumChange('sym_sectors', this.value)">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. LOOP & DYNAMICS -->
+            <div class="config-card">
+                <div class="config-card-header">
+                    <span>2. Loop & Dynamics</span>
+                    <span class="tag">ITERATION</span>
+                </div>
+                <div class="config-card-body">
+                    <div class="knob-row">
+                        <span class="knob-label">Iterations</span>
+                        <div class="knob-control">
+                            <input type="range" class="knob-slider" id="lab-slider-iterations" min="1" max="24" step="1" value="11" oninput="onLabKnobChange('iterations', this.value)">
+                            <input type="number" class="knob-num" id="lab-num-iterations" step="1" value="11" onchange="onLabNumChange('iterations', this.value)">
+                        </div>
+                    </div>
+                    <div class="knob-row">
+                        <span class="knob-label">Time Rate</span>
+                        <div class="knob-control">
+                            <input type="range" class="knob-slider" id="lab-slider-time_speed" min="0.0" max="3.0" step="0.01" value="0.89" oninput="onLabKnobChange('time_speed', this.value)">
+                            <input type="number" class="knob-num" id="lab-num-time_speed" step="0.01" value="0.89" onchange="onLabNumChange('time_speed', this.value)">
+                        </div>
+                    </div>
+                    <div class="knob-row">
+                        <span class="knob-label">Global Rotation</span>
+                        <div class="knob-control">
+                            <input type="range" class="knob-slider" id="lab-slider-global_rot_speed" min="-2.0" max="2.0" step="0.01" value="0.00" oninput="onLabKnobChange('global_rot_speed', this.value)">
+                            <input type="number" class="knob-num" id="lab-num-global_rot_speed" step="0.01" value="0.00" onchange="onLabNumChange('global_rot_speed', this.value)">
+                        </div>
+                    </div>
+                    <div class="knob-row">
+                        <span class="knob-label">Zoom Scale</span>
+                        <div class="knob-control">
+                            <input type="range" class="knob-slider" id="lab-slider-zoom" min="0.2" max="4.0" step="0.01" value="1.00" oninput="onLabKnobChange('zoom', this.value)">
+                            <input type="number" class="knob-num" id="lab-num-zoom" step="0.01" value="1.00" onchange="onLabNumChange('zoom', this.value)">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. TRANSFORMS & WARPING -->
+            <div class="config-card">
+                <div class="config-card-header">
+                    <span>3. Transforms & Wave Warping</span>
+                    <span class="tag">HARMONICS</span>
+                </div>
+                <div class="config-card-body">
+                    <div class="knob-row">
+                        <span class="knob-label">Step Rotation</span>
+                        <div class="knob-control">
+                            <input type="range" class="knob-slider" id="lab-slider-rot_base" min="-3.14" max="3.14" step="0.01" value="1.02" oninput="onLabKnobChange('rot_base', this.value)">
+                            <input type="number" class="knob-num" id="lab-num-rot_base" step="0.01" value="1.02" onchange="onLabNumChange('rot_base', this.value)">
+                        </div>
+                    </div>
+                    <div class="knob-row">
+                        <span class="knob-label">Rot Time Rate</span>
+                        <div class="knob-control">
+                            <input type="range" class="knob-slider" id="lab-slider-rot_time" min="-2.0" max="2.0" step="0.01" value="0.67" oninput="onLabKnobChange('rot_time', this.value)">
+                            <input type="number" class="knob-num" id="lab-num-rot_time" step="0.01" value="0.67" onchange="onLabNumChange('rot_time', this.value)">
+                        </div>
+                    </div>
+                    <div class="knob-row">
+                        <span class="knob-label">Warp X Amp</span>
+                        <div class="knob-control">
+                            <input type="range" class="knob-slider" id="lab-slider-warp_x_amp" min="0.0" max="0.5" step="0.002" value="0.00" oninput="onLabKnobChange('warp_x_amp', this.value)">
+                            <input type="number" class="knob-num" id="lab-num-warp_x_amp" step="0.001" value="0.000" onchange="onLabNumChange('warp_x_amp', this.value)">
+                        </div>
+                    </div>
+                    <div class="knob-row">
+                        <span class="knob-label">Warp X Freq</span>
+                        <div class="knob-control">
+                            <input type="range" class="knob-slider" id="lab-slider-warp_x_freq" min="0.5" max="20.0" step="0.1" value="4.50" oninput="onLabKnobChange('warp_x_freq', this.value)">
+                            <input type="number" class="knob-num" id="lab-num-warp_x_freq" step="0.1" value="4.5" onchange="onLabNumChange('warp_x_freq', this.value)">
+                        </div>
+                    </div>
+                    <div class="knob-row">
+                        <span class="knob-label">Warp Y Amp</span>
+                        <div class="knob-control">
+                            <input type="range" class="knob-slider" id="lab-slider-warp_y_amp" min="0.0" max="0.5" step="0.002" value="0.025" oninput="onLabKnobChange('warp_y_amp', this.value)">
+                            <input type="number" class="knob-num" id="lab-num-warp_y_amp" step="0.001" value="0.025" onchange="onLabNumChange('warp_y_amp', this.value)">
+                        </div>
+                    </div>
+                    <div class="knob-row">
+                        <span class="knob-label">Warp Y Freq</span>
+                        <div class="knob-control">
+                            <input type="range" class="knob-slider" id="lab-slider-warp_y_freq" min="0.5" max="20.0" step="0.1" value="4.46" oninput="onLabKnobChange('warp_y_freq', this.value)">
+                            <input type="number" class="knob-num" id="lab-num-warp_y_freq" step="0.1" value="4.5" onchange="onLabNumChange('warp_y_freq', this.value)">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 4. DISTANCE & GLOW SHAPING -->
+            <div class="config-card">
+                <div class="config-card-header">
+                    <span>4. Distance & Glow Shaping</span>
+                    <span class="tag">SHADING</span>
+                </div>
+                <div class="config-card-body">
+                    <div class="knob-row">
+                        <span class="knob-label">Distance Decay</span>
+                        <div class="knob-control">
+                            <input type="range" class="knob-slider" id="lab-slider-dist_decay" min="0.0" max="3.0" step="0.01" value="1.22" oninput="onLabKnobChange('dist_decay', this.value)">
+                            <input type="number" class="knob-num" id="lab-num-dist_decay" step="0.01" value="1.22" onchange="onLabNumChange('dist_decay', this.value)">
+                        </div>
+                    </div>
+                    <div class="knob-row">
+                        <span class="knob-label">Sine Frequency</span>
+                        <div class="knob-control">
+                            <input type="range" class="knob-slider" id="lab-slider-sin_freq" min="0.0" max="25.0" step="0.1" value="7.64" oninput="onLabKnobChange('sin_freq', this.value)">
+                            <input type="number" class="knob-num" id="lab-num-sin_freq" step="0.1" value="7.6" onchange="onLabNumChange('sin_freq', this.value)">
+                        </div>
+                    </div>
+                    <div class="knob-row">
+                        <span class="knob-label">Sine Time Rate</span>
+                        <div class="knob-control">
+                            <input type="range" class="knob-slider" id="lab-slider-sin_time" min="-5.0" max="5.0" step="0.05" value="0.98" oninput="onLabKnobChange('sin_time', this.value)">
+                            <input type="number" class="knob-num" id="lab-num-sin_time" step="0.01" value="0.98" onchange="onLabNumChange('sin_time', this.value)">
+                        </div>
+                    </div>
+                    <div class="knob-row">
+                        <span class="knob-label">Glow Numerator</span>
+                        <div class="knob-control">
+                            <input type="range" class="knob-slider" id="lab-slider-glow_num" min="0.001" max="0.05" step="0.0005" value="0.007" oninput="onLabKnobChange('glow_num', this.value)">
+                            <input type="number" class="knob-num" id="lab-num-glow_num" step="0.001" value="0.007" onchange="onLabNumChange('glow_num', this.value)">
+                        </div>
+                    </div>
+                    <div class="knob-row">
+                        <span class="knob-label">Glow Falloff Exp</span>
+                        <div class="knob-control">
+                            <input type="range" class="knob-slider" id="lab-slider-glow_exp" min="0.5" max="3.0" step="0.02" value="1.31" oninput="onLabKnobChange('glow_exp', this.value)">
+                            <input type="number" class="knob-num" id="lab-num-glow_exp" step="0.01" value="1.31" onchange="onLabNumChange('glow_exp', this.value)">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 5. IQ COSINE COLOR PALETTE MODEL -->
+            <div class="config-card">
+                <div class="config-card-header">
+                    <span>5. IQ Cosine Color Palette</span>
+                    <span class="tag">CHROMATICS</span>
+                </div>
+                <div class="config-card-body">
+                    <div class="knob-row">
+                        <span class="knob-label">Palette Preset</span>
+                        <div class="knob-control">
+                            <select id="lab-sel-palette_preset" class="select-input" onchange="applyPalettePreset(this.value)">
+                                <option value="cyberpunk">Cyberpunk Neon</option>
+                                <option value="crimson_void">Crimson Void</option>
+                                <option value="acid_slime">Acid Slime</option>
+                                <option value="electric_blue">Electric Blue</option>
+                                <option value="sunset_dream">Sunset Dream</option>
+                                <option value="obsidian_bone">Obsidian Bone</option>
+                                <option value="vaporwave">Vaporwave</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div id="lab-palette-preview" class="palette-preview-bar"></div>
+
+                    <div class="knob-row">
+                        <span class="knob-label">Cycle Speed</span>
+                        <div class="knob-control">
+                            <input type="range" class="knob-slider" id="lab-slider-pal_speed" min="0.0" max="3.0" step="0.01" value="1.00" oninput="onLabKnobChange('pal_speed', this.value)">
+                            <input type="number" class="knob-num" id="lab-num-pal_speed" step="0.01" value="1.00" onchange="onLabNumChange('pal_speed', this.value)">
+                        </div>
+                    </div>
+                    <div class="knob-row">
+                        <span class="knob-label">Spread Rate</span>
+                        <div class="knob-control">
+                            <input type="range" class="knob-slider" id="lab-slider-pal_spread" min="0.0" max="3.0" step="0.01" value="0.985" oninput="onLabKnobChange('pal_spread', this.value)">
+                            <input type="number" class="knob-num" id="lab-num-pal_spread" step="0.01" value="0.985" onchange="onLabNumChange('pal_spread', this.value)">
+                        </div>
+                    </div>
+
+                    <div style="font-size: 0.7rem; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 0.1rem; margin-top: 4px;">Vector a (Offset RGB)</div>
+                    <div class="knob-row">
+                        <span class="knob-label" style="width: 50px;">a.rgb</span>
+                        <div class="knob-control">
+                            <input type="range" class="knob-slider red" id="lab-slider-a_r" min="0" max="1" step="0.01" value="0.64" oninput="onLabKnobChange('a_r', this.value)">
+                            <input type="number" class="knob-num" id="lab-num-a_r" step="0.01" value="0.64" onchange="onLabNumChange('a_r', this.value)">
+                            <input type="range" class="knob-slider green" id="lab-slider-a_g" min="0" max="1" step="0.01" value="0.05" oninput="onLabKnobChange('a_g', this.value)">
+                            <input type="number" class="knob-num" id="lab-num-a_g" step="0.01" value="0.05" onchange="onLabNumChange('a_g', this.value)">
+                            <input type="range" class="knob-slider blue" id="lab-slider-a_b" min="0" max="1" step="0.70" oninput="onLabKnobChange('a_b', this.value)">
+                            <input type="number" class="knob-num" id="lab-num-a_b" step="0.01" value="0.70" onchange="onLabNumChange('a_b', this.value)">
+                        </div>
+                    </div>
+
+                    <div style="font-size: 0.7rem; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 0.1rem; margin-top: 4px;">Vector b (Amplitude RGB)</div>
+                    <div class="knob-row">
+                        <span class="knob-label" style="width: 50px;">b.rgb</span>
+                        <div class="knob-control">
+                            <input type="range" class="knob-slider red" id="lab-slider-b_r" min="0" max="1" step="0.01" value="0.05" oninput="onLabKnobChange('b_r', this.value)">
+                            <input type="number" class="knob-num" id="lab-num-b_r" step="0.01" value="0.05" onchange="onLabNumChange('b_r', this.value)">
+                            <input type="range" class="knob-slider green" id="lab-slider-b_g" min="0" max="1" step="0.01" value="0.02" oninput="onLabKnobChange('b_g', this.value)">
+                            <input type="number" class="knob-num" id="lab-num-b_g" step="0.01" value="0.02" onchange="onLabNumChange('b_g', this.value)">
+                            <input type="range" class="knob-slider blue" id="lab-slider-b_b" min="0" max="1" step="0.01" value="0.80" oninput="onLabKnobChange('b_b', this.value)">
+                            <input type="number" class="knob-num" id="lab-num-b_b" step="0.01" value="0.80" onchange="onLabNumChange('b_b', this.value)">
+                        </div>
+                    </div>
+
+                    <div style="font-size: 0.7rem; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 0.1rem; margin-top: 4px;">Vector c (Frequency RGB)</div>
+                    <div class="knob-row">
+                        <span class="knob-label" style="width: 50px;">c.rgb</span>
+                        <div class="knob-control">
+                            <input type="range" class="knob-slider red" id="lab-slider-c_r" min="0" max="5" step="0.02" value="2.88" oninput="onLabKnobChange('c_r', this.value)">
+                            <input type="number" class="knob-num" id="lab-num-c_r" step="0.01" value="2.88" onchange="onLabNumChange('c_r', this.value)">
+                            <input type="range" class="knob-slider green" id="lab-slider-c_g" min="0" max="5" step="0.02" value="1.60" oninput="onLabKnobChange('c_g', this.value)">
+                            <input type="number" class="knob-num" id="lab-num-c_g" step="0.01" value="1.60" onchange="onLabNumChange('c_g', this.value)">
+                            <input type="range" class="knob-slider blue" id="lab-slider-c_b" min="0" max="5" step="0.02" value="1.99" oninput="onLabKnobChange('c_b', this.value)">
+                            <input type="number" class="knob-num" id="lab-num-c_b" step="0.01" value="1.99" onchange="onLabNumChange('c_b', this.value)">
+                        </div>
+                    </div>
+
+                    <div style="font-size: 0.7rem; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 0.1rem; margin-top: 4px;">Vector d (Phase RGB)</div>
+                    <div class="knob-row">
+                        <span class="knob-label" style="width: 50px;">d.rgb</span>
+                        <div class="knob-control">
+                            <input type="range" class="knob-slider red" id="lab-slider-d_r" min="0" max="1" step="0.01" value="0.69" oninput="onLabKnobChange('d_r', this.value)">
+                            <input type="number" class="knob-num" id="lab-num-d_r" step="0.01" value="0.69" onchange="onLabNumChange('d_r', this.value)">
+                            <input type="range" class="knob-slider green" id="lab-slider-d_g" min="0" max="1" step="0.01" value="0.49" oninput="onLabKnobChange('d_g', this.value)">
+                            <input type="number" class="knob-num" id="lab-num-d_g" step="0.01" value="0.49" onchange="onLabNumChange('d_g', this.value)">
+                            <input type="range" class="knob-slider blue" id="lab-slider-d_b" min="0" max="1" step="0.01" value="0.15" oninput="onLabKnobChange('d_b', this.value)">
+                            <input type="number" class="knob-num" id="lab-num-d_b" step="0.01" value="0.15" onchange="onLabNumChange('d_b', this.value)">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <div id="fav-btn">★</div>
-    <div id="fav-tab-btn">Favorites</div>
 
     <div id="fav-panel" class="">
         <div id="fav-panel-content">
@@ -438,7 +998,7 @@
     </div>
 
     <div id="speed-control">
-        <button id="pause-btn" title="Freeze/unfreeze animation (saves GPU)">▶ Live</button>
+        <button id="pause-btn" title="Freeze/unfreeze animation">Live</button>
         <label for="speed-slider">Speed:</label>
         <input type="range" id="speed-slider" min="0" max="3" step="0.01" value="0.05">
         <input type="number" id="speed-input" min="0" max="10" step="0.01" value="0.05">
@@ -745,6 +1305,18 @@
             return shader;
         }
 
+        function initGLContext(glCtx) {
+            if (!glCtx) return;
+            if (!glCtx.vertexShader) {
+                glCtx.vertexShader = createShader(glCtx, glCtx.VERTEX_SHADER, vsSource);
+                glCtx.positionBuffer = glCtx.createBuffer();
+                glCtx.bindBuffer(glCtx.ARRAY_BUFFER, glCtx.positionBuffer);
+                const positions = [-1.0, -1.0, 1.0, -1.0, -1.0, 1.0, -1.0, 1.0, 1.0, -1.0, 1.0, 1.0];
+                glCtx.bufferData(glCtx.ARRAY_BUFFER, new Float32Array(positions), glCtx.STATIC_DRAW);
+            }
+        }
+        initGLContext(gl);
+
         const TOTAL_SLIDES = hardcodedShaders.length;
         const mainCache = new Array(TOTAL_SLIDES).fill(null);
 
@@ -764,6 +1336,7 @@
             previewCanvas.width = 160;
             previewCanvas.height = 90;
             const ctxGl = previewCanvas.getContext('webgl') || previewCanvas.getContext('experimental-webgl');
+            initGLContext(ctxGl);
 
             const title = document.createElement('div');
             title.className = 'car-title';
@@ -843,16 +1416,9 @@
         function getProgram(glCtx, cache, index) {
             index = (index + TOTAL_SLIDES) % TOTAL_SLIDES;
             if (cache[index]) return cache[index];
+            initGLContext(glCtx);
             const fsSource = hardcodedShaders[index].fs;
             const title = hardcodedShaders[index].title;
-
-            if (!glCtx.vertexShader) {
-                glCtx.vertexShader = createShader(glCtx, glCtx.VERTEX_SHADER, vsSource);
-                glCtx.positionBuffer = glCtx.createBuffer();
-                glCtx.bindBuffer(glCtx.ARRAY_BUFFER, glCtx.positionBuffer);
-                const positions = [-1.0, -1.0, 1.0, -1.0, -1.0, 1.0, -1.0, 1.0, 1.0, -1.0, 1.0, 1.0];
-                glCtx.bufferData(glCtx.ARRAY_BUFFER, new Float32Array(positions), glCtx.STATIC_DRAW);
-            }
 
             const fragmentShader = createShader(glCtx, glCtx.FRAGMENT_SHADER, fsSource);
             if (!fragmentShader) return index === 0 ? null : getProgram(glCtx, cache, 0);
@@ -892,14 +1458,17 @@
         }
 
         document.addEventListener('keydown', (e) => {
-            if (e.target.tagName === 'INPUT') return;
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.tagName === 'TEXTAREA') return;
             if (e.key === 'ArrowRight') { currentSlide = (currentSlide + 1) % TOTAL_SLIDES; updateUI(); }
             else if (e.key === 'ArrowLeft') { currentSlide = (currentSlide - 1 + TOTAL_SLIDES) % TOTAL_SLIDES; updateUI(); }
             else if (e.key === 'f' || e.key === 'F') { toggleFavorite(); }
+            else if (e.key === 'Escape') {
+                favPanel.classList.remove('open');
+            }
         });
 
         document.addEventListener('click', (e) => {
-            if (e.target.closest('#carousel') || e.target.closest('#fav-panel') || e.target.closest('#fav-tab-btn') || e.target.closest('#fav-btn') || e.target.closest('#speed-control') || e.target.closest('input')) return;
+            if (e.target.closest('#nav-tabs') || e.target.closest('#lab-panel') || e.target.closest('#carousel') || e.target.closest('#fav-panel') || e.target.closest('#fav-tab-btn') || e.target.closest('#fav-btn') || e.target.closest('#speed-control') || e.target.closest('input') || e.target.closest('select') || e.target.closest('button')) return;
             const pInfo = temporaryFavoriteOverride || getProgram(gl, mainCache, currentSlide);
             if (pInfo && pInfo.fsSource) {
                 navigator.clipboard.writeText(pInfo.fsSource).then(() => {
@@ -960,8 +1529,9 @@
         });
 
         function loadFavoriteIntoView(fav) {
+            initGLContext(gl);
             const fragmentShader = createShader(gl, gl.FRAGMENT_SHADER, fav.fsSource);
-            if (!fragmentShader) return;
+            if (!fragmentShader || !gl.vertexShader) return;
 
             const program = gl.createProgram();
             gl.attachShader(program, gl.vertexShader);
@@ -1038,7 +1608,395 @@
             });
         });
 
-        updateUI(true);
+        // ==========================================
+        // --- TAB & LABORATORY SYNTHESIZER ENGINE ---
+        // ==========================================
+        let currentMainTab = 'gallery';
+        let labCompiledProgramInfo = null;
+
+        let labState = {
+            name: "SYNTH-01",
+            fold_type: "inversion",
+            fold_offset_x: 0.724,
+            fold_offset_y: 0.724,
+            fold_scale: 1.20,
+            sym_sectors: 7,
+            iterations: 11,
+            time_speed: 0.89,
+            global_rot_speed: 0.00,
+            zoom: 1.00,
+            rot_base: 1.02,
+            rot_time: 0.67,
+            warp_x_amp: 0.00,
+            warp_x_freq: 4.50,
+            warp_y_amp: 0.025,
+            warp_y_freq: 4.46,
+            dist_decay: 1.22,
+            sin_freq: 7.64,
+            sin_time: 0.98,
+            glow_num: 0.007,
+            glow_exp: 1.31,
+            pal_speed: 1.00,
+            pal_spread: 0.985,
+            a_r: 0.64, a_g: 0.05, a_b: 0.70,
+            b_r: 0.05, b_g: 0.02, b_b: 0.80,
+            c_r: 2.88, c_g: 1.60, c_b: 1.99,
+            d_r: 0.69, d_g: 0.49, d_b: 0.15
+        };
+
+        const palettePresets = {
+            cyberpunk: { a: [0.64, 0.05, 0.70], b: [0.05, 0.02, 0.80], c: [2.88, 1.60, 1.99], d: [0.69, 0.49, 0.15] },
+            crimson_void: { a: [0.50, 0.10, 0.15], b: [0.50, 0.05, 0.10], c: [1.00, 1.00, 1.00], d: [0.00, 0.33, 0.67] },
+            acid_slime: { a: [0.26, 0.98, 0.17], b: [0.59, 0.36, 0.00], c: [2.39, 1.41, 1.09], d: [0.33, 0.97, 0.39] },
+            electric_blue: { a: [0.31, 0.29, 0.96], b: [0.77, 0.44, 0.48], c: [1.73, 2.72, 1.42], d: [1.00, 0.95, 0.85] },
+            sunset_dream: { a: [0.74, 0.18, 0.12], b: [0.84, 0.36, 0.22], c: [2.41, 1.47, 1.43], d: [0.83, 0.87, 0.74] },
+            obsidian_bone: { a: [0.85, 0.85, 0.85], b: [0.15, 0.15, 0.15], c: [1.00, 1.00, 1.00], d: [0.00, 0.00, 0.00] },
+            vaporwave: { a: [0.55, 0.42, 0.62], b: [0.42, 0.38, 0.35], c: [1.00, 1.10, 0.85], d: [0.12, 0.45, 0.78] }
+        };
+
+        function switchMainTab(tabName) {
+            currentMainTab = tabName;
+            localStorage.setItem('fractal_active_tab', tabName);
+
+            const tabGalleryBtn = document.getElementById('tab-btn-gallery');
+            const tabLabBtn = document.getElementById('tab-btn-lab');
+            const labPanel = document.getElementById('lab-panel');
+            const galleryEls = document.querySelectorAll('.gallery-only');
+
+            if (tabName === 'gallery') {
+                tabGalleryBtn.classList.add('active');
+                tabLabBtn.classList.remove('active');
+                labPanel.classList.remove('open');
+                galleryEls.forEach(el => el.classList.remove('hidden'));
+                temporaryFavoriteOverride = null;
+                updateUI();
+            } else if (tabName === 'lab') {
+                tabLabBtn.classList.add('active');
+                tabGalleryBtn.classList.remove('active');
+                labPanel.classList.add('open');
+                galleryEls.forEach(el => el.classList.add('hidden'));
+                syncLabControlsToState();
+                applyLabShader();
+            }
+        }
+
+        function generateLabShaderSource(state) {
+            const iters = Math.min(24, Math.max(1, Math.round(state.iterations)));
+            const ox = Number(state.fold_offset_x).toFixed(5);
+            const oy = Number(state.fold_offset_y).toFixed(5);
+            const scale = Number(state.fold_scale).toFixed(5);
+            const sectors = Math.max(3, Math.round(state.sym_sectors)).toFixed(1);
+
+            let operatorGLSL = "";
+            if (state.fold_type === 'inversion') {
+                operatorGLSL = `uv = uv / max(dot(uv, uv), 0.0001) - vec2(${ox}, ${oy});`;
+            } else if (state.fold_type === 'abs_box') {
+                operatorGLSL = `uv = (abs(uv) - vec2(${ox}, ${oy})) * ${scale};`;
+            } else if (state.fold_type === 'julia') {
+                operatorGLSL = `uv = vec2(uv.x * uv.x - uv.y * uv.y, 2.0 * uv.x * uv.y) + vec2(${ox} * sin(t * 0.5), ${oy} * cos(t * 0.6));`;
+            } else if (state.fold_type === 'polar_kaleido') {
+                operatorGLSL = `float r_k = length(uv); float a_k = atan(uv.y, uv.x); float seg_k = 6.28318 / ${sectors}; a_k = abs(mod(a_k + seg_k * 0.5, seg_k) - seg_k * 0.5); uv = r_k * vec2(cos(a_k), sin(a_k)) - vec2(${ox}, ${oy}); uv *= ${scale};`;
+            } else if (state.fold_type === 'droste') {
+                operatorGLSL = `float r_d = length(uv); float a_d = atan(uv.y, uv.x); float lr_d = log(max(r_d, 0.001)); uv = vec2(lr_d * ${scale} - t * 0.2, a_d * ${sectors} / 6.28318 + lr_d * ${ox}); uv = fract(uv + 0.5) - 0.5;`;
+            } else if (state.fold_type === 'sierpinski') {
+                operatorGLSL = `uv.x = abs(uv.x); const vec2 nrm_s = vec2(-0.5, 0.8660254); uv -= 2.0 * min(0.0, dot(uv, nrm_s)) * nrm_s; uv = uv * ${scale} - vec2(${ox}, ${oy}) * (${scale} - 1.0);`;
+            } else if (state.fold_type === 'fract_grid') {
+                operatorGLSL = `uv = (fract(uv * ${scale} + 0.5) - 0.5) - vec2(${ox}, ${oy}) * 0.2;`;
+            }
+
+            return `precision highp float;
+uniform vec2 u_resolution;
+uniform float u_time;
+
+vec3 palette( in float t, in vec3 a, in vec3 b, in vec3 c, in vec3 d ) {
+    return a + b * cos( 6.28318 * (c * t + d) );
+}
+
+mat2 rot(float a) {
+    float s = sin(a), c = cos(a);
+    return mat2(c, -s, s, c);
+}
+
+void main() {
+    vec2 uv = (gl_FragCoord.xy * 2.0 - u_resolution.xy) / min(u_resolution.x, u_resolution.y);
+    uv *= ${Number(state.zoom).toFixed(4)};
+    vec2 uv0 = uv;
+    float t = u_time * ${Number(state.time_speed).toFixed(5)};
+    ${state.global_rot_speed !== 0 ? `uv *= rot(t * ${Number(state.global_rot_speed).toFixed(5)});` : ''}
+
+    vec3 finalColor = vec3(0.0);
+    const int ITERS = ${iters};
+
+    for(int i = 0; i < 24; i++) {
+        if(i >= ITERS) break;
+        float fi = float(i);
+
+        // 1. Space Folding Operator
+        ${operatorGLSL}
+
+        // 2. Transforms & Wave Warping
+        uv *= rot(fi * ${Number(state.rot_base).toFixed(5)} + t * ${Number(state.rot_time).toFixed(5)});
+        ${state.warp_x_amp > 0.0005 ? `uv.x += ${Number(state.warp_x_amp).toFixed(5)} * sin(uv.y * ${Number(state.warp_x_freq).toFixed(5)} + t);` : ''}
+        ${state.warp_y_amp > 0.0005 ? `uv.y += ${Number(state.warp_y_amp).toFixed(5)} * cos(uv.x * ${Number(state.warp_y_freq).toFixed(5)} - t);` : ''}
+
+        // 3. Distance & Scale Falloff
+        float d = length(uv) * exp(-length(uv0) * ${Number(state.dist_decay).toFixed(5)});
+
+        // 4. Cosine Palette Sampling
+        vec3 col = palette(
+            length(uv0) + fi * ${Number(state.pal_spread).toFixed(5)} + t * ${Number(state.pal_speed).toFixed(5)},
+            vec3(${Number(state.a_r).toFixed(5)}, ${Number(state.a_g).toFixed(5)}, ${Number(state.a_b).toFixed(5)}),
+            vec3(${Number(state.b_r).toFixed(5)}, ${Number(state.b_g).toFixed(5)}, ${Number(state.b_b).toFixed(5)}),
+            vec3(${Number(state.c_r).toFixed(5)}, ${Number(state.c_g).toFixed(5)}, ${Number(state.c_b).toFixed(5)}),
+            vec3(${Number(state.d_r).toFixed(5)}, ${Number(state.d_g).toFixed(5)}, ${Number(state.d_b).toFixed(5)})
+        );
+
+        // 5. Distance Glow & Intensity
+        ${state.sin_freq > 0.01 ? `d = sin(d * ${Number(state.sin_freq).toFixed(5)} + t * ${Number(state.sin_time).toFixed(5)});` : ''}
+        d = abs(d);
+        d = pow(${Number(state.glow_num).toFixed(5)} / max(d, 0.0001), ${Number(state.glow_exp).toFixed(5)});
+        finalColor += col * d;
+    }
+
+    gl_FragColor = vec4(clamp(finalColor, 0.0, 1.0), 1.0);
+}`;
+        }
+
+        function applyLabShader() {
+            initGLContext(gl);
+            const fsSource = generateLabShaderSource(labState);
+            const fragmentShader = createShader(gl, gl.FRAGMENT_SHADER, fsSource);
+            if (!fragmentShader || !gl.vertexShader) return;
+
+            const program = gl.createProgram();
+            gl.attachShader(program, gl.vertexShader);
+            gl.attachShader(program, fragmentShader);
+            gl.linkProgram(program);
+
+            labCompiledProgramInfo = {
+                title: "LAB // " + labState.name,
+                program: program,
+                fsSource: fsSource,
+                timeLoc: gl.getUniformLocation(program, 'u_time'),
+                resLoc: gl.getUniformLocation(program, 'u_resolution'),
+                posAttr: gl.getAttribLocation(program, 'aVertexPosition')
+            };
+
+            if (currentMainTab === 'lab') {
+                temporaryFavoriteOverride = labCompiledProgramInfo;
+                overlay.innerText = "LAB // " + labState.name;
+                updateFavButton();
+                if (typeof drawFrame === 'function' && isPaused) drawFrame();
+            }
+            updatePalettePreview();
+        }
+
+        function updatePalettePreview() {
+            const el = document.getElementById('lab-palette-preview');
+            if (!el) return;
+            const stops = [];
+            for (let i = 0; i <= 10; i++) {
+                const t = i / 10;
+                const r = Math.min(1, Math.max(0, labState.a_r + labState.b_r * Math.cos(6.28318 * (labState.c_r * t + labState.d_r))));
+                const g = Math.min(1, Math.max(0, labState.a_g + labState.b_g * Math.cos(6.28318 * (labState.c_g * t + labState.d_g))));
+                const b = Math.min(1, Math.max(0, labState.a_b + labState.b_b * Math.cos(6.28318 * (labState.c_b * t + labState.d_b))));
+                stops.push(`rgb(${Math.round(r * 255)}, ${Math.round(g * 255)}, ${Math.round(b * 255)})`);
+            }
+            el.style.background = `linear-gradient(to right, ${stops.join(', ')})`;
+        }
+
+        function syncLabControlsToState() {
+            for (const key in labState) {
+                const slider = document.getElementById('lab-slider-' + key);
+                const num = document.getElementById('lab-num-' + key);
+                const sel = document.getElementById('lab-sel-' + key);
+
+                if (slider) slider.value = labState[key];
+                if (num) num.value = typeof labState[key] === 'number' ? Number(labState[key]).toFixed(2) : labState[key];
+                if (sel) sel.value = labState[key];
+            }
+            updatePalettePreview();
+        }
+
+        function onLabKnobChange(key, val) {
+            labState[key] = parseFloat(val);
+            const num = document.getElementById('lab-num-' + key);
+            if (num) {
+                num.value = (key === 'warp_x_amp' || key === 'warp_y_amp' || key === 'glow_num') ? Number(val).toFixed(3) : Number(val).toFixed(2);
+            }
+            applyLabShader();
+        }
+
+        function onLabNumChange(key, val) {
+            const num = parseFloat(val);
+            if (!isNaN(num)) {
+                labState[key] = num;
+                const slider = document.getElementById('lab-slider-' + key);
+                if (slider) slider.value = num;
+                applyLabShader();
+            }
+        }
+
+        function onLabSelectChange(key, val) {
+            labState[key] = val;
+            applyLabShader();
+        }
+
+        function applyPalettePreset(presetKey) {
+            const p = palettePresets[presetKey];
+            if (!p) return;
+            labState.a_r = p.a[0]; labState.a_g = p.a[1]; labState.a_b = p.a[2];
+            labState.b_r = p.b[0]; labState.b_g = p.b[1]; labState.b_b = p.b[2];
+            labState.c_r = p.c[0]; labState.c_g = p.c[1]; labState.c_b = p.c[2];
+            labState.d_r = p.d[0]; labState.d_g = p.d[1]; labState.d_b = p.d[2];
+            syncLabControlsToState();
+            applyLabShader();
+        }
+
+        function forkCurrentGallerySlide() {
+            const currentTitle = getTitle(currentSlide);
+            labState.name = "FORK-" + currentTitle.replace(/\s+/g, '');
+            // Apply slight variations
+            labState.rot_base = (Math.random() * 3.14 - 1.57);
+            labState.sin_freq = 4.0 + Math.random() * 8.0;
+            syncLabControlsToState();
+            applyLabShader();
+            const btn = event?.target;
+            if (btn) {
+                const orig = btn.innerText;
+                btn.innerText = "FORKED";
+                setTimeout(() => { btn.innerText = orig; }, 1500);
+            }
+        }
+
+        function randomizeLab() {
+            const types = ['inversion', 'abs_box', 'julia', 'polar_kaleido', 'droste', 'sierpinski', 'fract_grid'];
+            labState.fold_type = types[Math.floor(Math.random() * types.length)];
+            labState.fold_offset_x = (Math.random() * 1.8 - 0.9);
+            labState.fold_offset_y = (Math.random() * 1.8 - 0.9);
+            labState.fold_scale = 0.8 + Math.random() * 1.2;
+            labState.sym_sectors = Math.floor(4 + Math.random() * 8);
+            labState.iterations = Math.floor(5 + Math.random() * 11);
+            labState.time_speed = 0.3 + Math.random() * 1.2;
+            labState.global_rot_speed = (Math.random() - 0.5) * 0.8;
+            labState.zoom = 0.8 + Math.random() * 0.6;
+            labState.rot_base = (Math.random() * 4.0 - 2.0);
+            labState.rot_time = (Math.random() * 2.0 - 1.0);
+            labState.warp_x_amp = Math.random() < 0.5 ? 0 : Math.random() * 0.25;
+            labState.warp_x_freq = 2.0 + Math.random() * 8.0;
+            labState.warp_y_amp = Math.random() < 0.5 ? 0 : Math.random() * 0.25;
+            labState.warp_y_freq = 2.0 + Math.random() * 8.0;
+            labState.dist_decay = 0.4 + Math.random() * 1.5;
+            labState.sin_freq = 2.0 + Math.random() * 8.0;
+            labState.sin_time = (Math.random() * 4.0 - 2.0);
+            labState.glow_num = 0.005 + Math.random() * 0.015;
+            labState.glow_exp = 1.1 + Math.random() * 0.5;
+            labState.pal_speed = 0.5 + Math.random() * 1.0;
+            labState.pal_spread = 0.4 + Math.random() * 1.2;
+
+            const presetKeys = Object.keys(palettePresets);
+            const chosen = palettePresets[presetKeys[Math.floor(Math.random() * presetKeys.length)]];
+            labState.a_r = chosen.a[0]; labState.a_g = chosen.a[1]; labState.a_b = chosen.a[2];
+            labState.b_r = chosen.b[0]; labState.b_g = chosen.b[1]; labState.b_b = chosen.b[2];
+            labState.c_r = chosen.c[0]; labState.c_g = chosen.c[1]; labState.c_b = chosen.c[2];
+            labState.d_r = chosen.d[0]; labState.d_g = chosen.d[1]; labState.d_b = chosen.d[2];
+
+            labState.name = "GEN-" + Math.floor(1000 + Math.random() * 9000);
+            syncLabControlsToState();
+            applyLabShader();
+        }
+
+        function mutateLab() {
+            const mutate = (val, maxDelta, minVal, maxVal) => {
+                const delta = (Math.random() * 2 - 1) * maxDelta;
+                return Math.max(minVal, Math.min(maxVal, val + delta));
+            };
+
+            labState.fold_offset_x = mutate(labState.fold_offset_x, 0.25, -2.0, 2.0);
+            labState.fold_offset_y = mutate(labState.fold_offset_y, 0.25, -2.0, 2.0);
+            labState.rot_base = mutate(labState.rot_base, 0.3, -3.14, 3.14);
+            labState.rot_time = mutate(labState.rot_time, 0.2, -2.0, 2.0);
+            labState.dist_decay = mutate(labState.dist_decay, 0.2, 0.0, 3.0);
+            labState.sin_freq = mutate(labState.sin_freq, 1.0, 0.0, 20.0);
+            labState.glow_num = mutate(labState.glow_num, 0.003, 0.001, 0.05);
+            labState.glow_exp = mutate(labState.glow_exp, 0.15, 0.5, 3.0);
+            labState.c_r = mutate(labState.c_r, 0.4, 0.0, 5.0);
+            labState.c_g = mutate(labState.c_g, 0.4, 0.0, 5.0);
+            labState.c_b = mutate(labState.c_b, 0.4, 0.0, 5.0);
+            labState.name = "MUT-" + Math.floor(100 + Math.random() * 900);
+
+            syncLabControlsToState();
+            applyLabShader();
+        }
+
+        function saveLabAsFavorite() {
+            const name = prompt("Enter a title for this synthesized fractal preset:", labState.name);
+            if (!name) return;
+
+            labState.name = name;
+            const fsSource = generateLabShaderSource(labState);
+            const title = "LAB // " + name;
+
+            const existingIdx = favorites.findIndex(f => f.title === title);
+            if (existingIdx >= 0) {
+                favorites[existingIdx].fsSource = fsSource;
+            } else {
+                favorites.push({ title: title, fsSource: fsSource });
+            }
+            saveFavorites();
+            updateFavButton();
+            alert(`Preset "${title}" saved to Favorites!`);
+        }
+
+        function copyLabGLSL() {
+            const fsSource = generateLabShaderSource(labState);
+            navigator.clipboard.writeText(fsSource).then(() => {
+                const btn = event?.target;
+                if (btn) {
+                    const orig = btn.innerText;
+                    btn.innerText = "COPIED";
+                    setTimeout(() => { btn.innerText = orig; }, 2000);
+                }
+            });
+        }
+
+        function resetLab() {
+            labState = {
+                name: "SYNTH-01",
+                fold_type: "inversion",
+                fold_offset_x: 0.724,
+                fold_offset_y: 0.724,
+                fold_scale: 1.20,
+                sym_sectors: 7,
+                iterations: 11,
+                time_speed: 0.89,
+                global_rot_speed: 0.00,
+                zoom: 1.00,
+                rot_base: 1.02,
+                rot_time: 0.67,
+                warp_x_amp: 0.00,
+                warp_x_freq: 4.50,
+                warp_y_amp: 0.025,
+                warp_y_freq: 4.46,
+                dist_decay: 1.22,
+                sin_freq: 7.64,
+                sin_time: 0.98,
+                glow_num: 0.007,
+                glow_exp: 1.31,
+                pal_speed: 1.00,
+                pal_spread: 0.985,
+                a_r: 0.64, a_g: 0.05, a_b: 0.70,
+                b_r: 0.05, b_g: 0.02, b_b: 0.80,
+                c_r: 2.88, c_g: 1.60, c_b: 1.99,
+                d_r: 0.69, d_g: 0.49, d_b: 0.15
+            };
+            syncLabControlsToState();
+            applyLabShader();
+        }
+
+        // Initialize active tab from localStorage or default to 'gallery'
+        const initialTab = localStorage.getItem('fractal_active_tab') || 'gallery';
+        switchMainTab(initialTab);
 
         function resizeCanvasToDisplaySize(canvas) {
             const displayWidth = canvas.clientWidth;
@@ -1076,10 +2034,10 @@
         // --- Freeze / Pause Toggle ---
         function updatePauseUI() {
             if (isPaused) {
-                pauseBtn.textContent = '❄ Frozen';
+                pauseBtn.textContent = 'Frozen';
                 pauseBtn.classList.add('frozen');
             } else {
-                pauseBtn.textContent = '▶ Live';
+                pauseBtn.textContent = 'Live';
                 pauseBtn.classList.remove('frozen');
             }
         }
