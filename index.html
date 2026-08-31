@@ -61,6 +61,30 @@
             border-color: #fff;
         }
 
+        #pause-btn {
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: rgba(255, 255, 255, 0.6);
+            padding: 4px 10px;
+            font-family: inherit;
+            font-size: 0.85rem;
+            border-radius: 3px;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 0.1rem;
+            transition: all 0.2s;
+            margin-right: 8px;
+        }
+        #pause-btn:hover {
+            border-color: #fff;
+            color: #fff;
+        }
+        #pause-btn.frozen {
+            border-color: #4fc3f7;
+            color: #4fc3f7;
+            background: rgba(79, 195, 247, 0.1);
+        }
+
         #fav-panel { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.85); backdrop-filter: blur(10px); z-index: 50; display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.4s ease; }
         #fav-panel.open { opacity: 1; pointer-events: auto; }
         
@@ -116,6 +140,7 @@
     </div>
     
     <div id="speed-control">
+        <button id="pause-btn" title="Freeze/unfreeze animation (saves GPU)">▶ Live</button>
         <label for="speed-slider">Speed:</label>
         <input type="range" id="speed-slider" min="0" max="3" step="0.05" value="1.0">
         <input type="number" id="speed-input" min="0" max="10" step="0.01" value="1.00">
@@ -565,6 +590,7 @@
             instructions.innerText = "◄ Traverse (Slide " + (currentSlide + 1) + "/" + TOTAL_SLIDES + ") ►";
             updateCarousel(instant);
             if (typeof updateFavButton === 'function') updateFavButton();
+            if (typeof drawFrame === 'function' && isPaused) setTimeout(drawFrame, 60);
         }
 
         document.addEventListener('keydown', (e) => {
@@ -656,6 +682,7 @@
             overlay.innerText = fav.title;
             instructions.innerText = "◄ Traverse arrows to exit Favorite View ►";
             updateFavButton();
+            if (typeof drawFrame === 'function' && isPaused) drawFrame();
         }
 
         function renderFavoritesList() {
@@ -724,12 +751,14 @@
             }
         }
 
+        var isPaused = localStorage.getItem('fractal_paused') === 'true';
         let globalTime = 0;
         let lastTime = 0;
         let speedMultiplier = 1.0;
         
         const speedSlider = document.getElementById('speed-slider');
         const speedInput = document.getElementById('speed-input');
+        const pauseBtn = document.getElementById('pause-btn');
 
         speedSlider.addEventListener('input', (e) => {
             speedMultiplier = parseFloat(e.target.value);
@@ -746,14 +775,34 @@
             }
         });
 
-        function render(now) {
-            if (lastTime === 0) lastTime = now;
-            let dt = now - lastTime;
-            lastTime = now;
-            if (dt > 100) dt = 16;
-            
-            globalTime += (dt * 0.001) * speedMultiplier;
-            
+        // --- Freeze / Pause Toggle ---
+        function updatePauseUI() {
+            if (isPaused) {
+                pauseBtn.textContent = '❄ Frozen';
+                pauseBtn.classList.add('frozen');
+            } else {
+                pauseBtn.textContent = '▶ Live';
+                pauseBtn.classList.remove('frozen');
+            }
+        }
+
+        function togglePause() {
+            isPaused = !isPaused;
+            localStorage.setItem('fractal_paused', isPaused.toString());
+            updatePauseUI();
+            if (!isPaused) {
+                lastTime = 0;
+                requestAnimationFrame(render);
+            } else {
+                drawFrame();
+            }
+        }
+
+        pauseBtn.addEventListener('click', togglePause);
+        updatePauseUI();
+
+        // --- Drawing ---
+        function drawFrame() {
             const progInfo = temporaryFavoriteOverride || getProgram(gl, mainCache, currentSlide);
             if (progInfo) {
                 resizeCanvasToDisplaySize(canvas);
@@ -781,11 +830,26 @@
                     item.gl.drawArrays(item.gl.TRIANGLES, 0, 6);
                 }
             });
+        }
 
+        function render(now) {
+            if (isPaused) return;
+            if (lastTime === 0) lastTime = now;
+            let dt = now - lastTime;
+            lastTime = now;
+            if (dt > 100) dt = 16;
+            
+            globalTime += (dt * 0.001) * speedMultiplier;
+            drawFrame();
             requestAnimationFrame(render);
         }
 
-        requestAnimationFrame(render);
+        // Start: render one frame if frozen, or begin animation loop
+        if (isPaused) {
+            drawFrame();
+        } else {
+            requestAnimationFrame(render);
+        }
     </script>
 </body>
 </html>
