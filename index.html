@@ -271,7 +271,8 @@
         }
 
         .lab-body {
-            flex: 1;
+            flex: 1 1 auto;
+            min-height: 0;
             overflow-y: auto;
             padding: 12px;
             display: flex;
@@ -288,6 +289,7 @@
         }
         .lab-body::-webkit-scrollbar-thumb {
             background: #333;
+            border-radius: 3px;
         }
         .lab-body::-webkit-scrollbar-thumb:hover {
             background: #555;
@@ -298,6 +300,7 @@
             border: 1px solid #282828;
             border-radius: 2px;
             overflow: hidden;
+            flex-shrink: 0;
         }
 
         .config-card-header {
@@ -312,6 +315,21 @@
             text-transform: uppercase;
             color: #fff;
             font-weight: bold;
+            cursor: pointer;
+            user-select: none;
+            transition: background 0.15s;
+        }
+
+        .config-card-header:hover {
+            background: #242424;
+        }
+
+        .config-card.collapsed .config-card-body {
+            display: none;
+        }
+
+        .config-card.collapsed .config-card-header {
+            border-bottom: none;
         }
 
         .config-card-header span.tag {
@@ -343,6 +361,22 @@
             flex-shrink: 0;
         }
 
+        .knob-label.sub {
+            font-size: 0.74rem;
+            color: #777;
+            padding-left: 6px;
+        }
+
+        .vector-group-title {
+            font-size: 0.72rem;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 0.08rem;
+            margin-top: 6px;
+            padding-bottom: 2px;
+            border-bottom: 1px solid #222;
+        }
+
         .knob-control {
             display: flex;
             align-items: center;
@@ -367,6 +401,18 @@
             border-radius: 50%;
             background: #fff;
             cursor: pointer;
+        }
+
+        .knob-slider.red::-webkit-slider-thumb {
+            background: #ff5555;
+        }
+
+        .knob-slider.green::-webkit-slider-thumb {
+            background: #55ff55;
+        }
+
+        .knob-slider.blue::-webkit-slider-thumb {
+            background: #5588ff;
         }
 
         .knob-num {
@@ -708,6 +754,18 @@
                 </div>
                 <div class="config-card-body">
                     <div class="knob-row">
+                        <span class="knob-label">Render Mode</span>
+                        <div class="knob-control">
+                            <select id="lab-sel-render_mode" class="select-input" onchange="onLabSelectChange('render_mode', this.value)">
+                                <option value="standard">Standard Glow (Additive)</option>
+                                <option value="orbit_trap">Orbit Trap (Proximity)</option>
+                                <option value="sdf_edge">SDF Edge (Solid + Contour)</option>
+                                <option value="invert">Inverted Bone (Dark on Light)</option>
+                                <option value="density">Density Histograms (Banding)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="knob-row">
                         <span class="knob-label">Family / Type</span>
                         <div class="knob-control">
                             <select id="lab-sel-fold_type" class="select-input" onchange="onLabSelectChange('fold_type', this.value)">
@@ -787,6 +845,27 @@
                             <input type="number" class="knob-num" id="lab-num-zoom" step="0.01" value="1.00" onchange="onLabNumChange('zoom', this.value)">
                         </div>
                     </div>
+                    <div class="knob-row">
+                        <span class="knob-label">Radial Pulse Amp</span>
+                        <div class="knob-control">
+                            <input type="range" class="knob-slider" id="lab-slider-pulse_amp" min="0.0" max="0.5" step="0.01" value="0.00" oninput="onLabKnobChange('pulse_amp', this.value)">
+                            <input type="number" class="knob-num" id="lab-num-pulse_amp" step="0.01" value="0.00" onchange="onLabNumChange('pulse_amp', this.value)">
+                        </div>
+                    </div>
+                    <div class="knob-row">
+                        <span class="knob-label">Pulse Time Freq</span>
+                        <div class="knob-control">
+                            <input type="range" class="knob-slider" id="lab-slider-pulse_time_freq" min="0.1" max="10.0" step="0.1" value="1.00" oninput="onLabKnobChange('pulse_time_freq', this.value)">
+                            <input type="number" class="knob-num" id="lab-num-pulse_time_freq" step="0.1" value="1.0" onchange="onLabNumChange('pulse_time_freq', this.value)">
+                        </div>
+                    </div>
+                    <div class="knob-row">
+                        <span class="knob-label">Pulse Space Freq</span>
+                        <div class="knob-control">
+                            <input type="range" class="knob-slider" id="lab-slider-pulse_space_freq" min="0.1" max="10.0" step="0.1" value="1.00" oninput="onLabKnobChange('pulse_space_freq', this.value)">
+                            <input type="number" class="knob-num" id="lab-num-pulse_space_freq" step="0.1" value="1.0" onchange="onLabNumChange('pulse_space_freq', this.value)">
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -809,6 +888,20 @@
                         <div class="knob-control">
                             <input type="range" class="knob-slider" id="lab-slider-rot_time" min="-2.0" max="2.0" step="0.01" value="0.67" oninput="onLabKnobChange('rot_time', this.value)">
                             <input type="number" class="knob-num" id="lab-num-rot_time" step="0.01" value="0.67" onchange="onLabNumChange('rot_time', this.value)">
+                        </div>
+                    </div>
+                    <div class="knob-row">
+                        <span class="knob-label">Rot Dist Factor</span>
+                        <div class="knob-control">
+                            <input type="range" class="knob-slider" id="lab-slider-rot_dist" min="-10.0" max="10.0" step="0.1" value="0.00" oninput="onLabKnobChange('rot_dist', this.value)">
+                            <input type="number" class="knob-num" id="lab-num-rot_dist" step="0.1" value="0.0" onchange="onLabNumChange('rot_dist', this.value)">
+                        </div>
+                    </div>
+                    <div class="knob-row">
+                        <span class="knob-label">Noise Amp</span>
+                        <div class="knob-control">
+                            <input type="range" class="knob-slider" id="lab-slider-noise_amp" min="0.0" max="1.0" step="0.01" value="0.00" oninput="onLabKnobChange('noise_amp', this.value)">
+                            <input type="number" class="knob-num" id="lab-num-noise_amp" step="0.01" value="0.00" onchange="onLabNumChange('noise_amp', this.value)">
                         </div>
                     </div>
                     <div class="knob-row">
@@ -871,6 +964,13 @@
                         </div>
                     </div>
                     <div class="knob-row">
+                        <span class="knob-label">Sine Divisor</span>
+                        <div class="knob-control">
+                            <input type="range" class="knob-slider" id="lab-slider-sin_div" min="0.1" max="10.0" step="0.1" value="1.0" oninput="onLabKnobChange('sin_div', this.value)">
+                            <input type="number" class="knob-num" id="lab-num-sin_div" step="0.1" value="1.0" onchange="onLabNumChange('sin_div', this.value)">
+                        </div>
+                    </div>
+                    <div class="knob-row">
                         <span class="knob-label">Glow Numerator</span>
                         <div class="knob-control">
                             <input type="range" class="knob-slider" id="lab-slider-glow_num" min="0.001" max="0.05" step="0.0005" value="0.007" oninput="onLabKnobChange('glow_num', this.value)">
@@ -926,53 +1026,93 @@
                         </div>
                     </div>
 
-                    <div style="font-size: 0.7rem; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 0.1rem; margin-top: 4px;">Vector a (Offset RGB)</div>
+                    <div class="vector-group-title">Vector a (Offset RGB)</div>
                     <div class="knob-row">
-                        <span class="knob-label" style="width: 50px;">a.rgb</span>
+                        <span class="knob-label sub">a.red</span>
                         <div class="knob-control">
                             <input type="range" class="knob-slider red" id="lab-slider-a_r" min="0" max="1" step="0.01" value="0.64" oninput="onLabKnobChange('a_r', this.value)">
                             <input type="number" class="knob-num" id="lab-num-a_r" step="0.01" value="0.64" onchange="onLabNumChange('a_r', this.value)">
+                        </div>
+                    </div>
+                    <div class="knob-row">
+                        <span class="knob-label sub">a.green</span>
+                        <div class="knob-control">
                             <input type="range" class="knob-slider green" id="lab-slider-a_g" min="0" max="1" step="0.01" value="0.05" oninput="onLabKnobChange('a_g', this.value)">
                             <input type="number" class="knob-num" id="lab-num-a_g" step="0.01" value="0.05" onchange="onLabNumChange('a_g', this.value)">
-                            <input type="range" class="knob-slider blue" id="lab-slider-a_b" min="0" max="1" step="0.70" oninput="onLabKnobChange('a_b', this.value)">
+                        </div>
+                    </div>
+                    <div class="knob-row">
+                        <span class="knob-label sub">a.blue</span>
+                        <div class="knob-control">
+                            <input type="range" class="knob-slider blue" id="lab-slider-a_b" min="0" max="1" step="0.01" value="0.70" oninput="onLabKnobChange('a_b', this.value)">
                             <input type="number" class="knob-num" id="lab-num-a_b" step="0.01" value="0.70" onchange="onLabNumChange('a_b', this.value)">
                         </div>
                     </div>
 
-                    <div style="font-size: 0.7rem; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 0.1rem; margin-top: 4px;">Vector b (Amplitude RGB)</div>
+                    <div class="vector-group-title">Vector b (Amplitude RGB)</div>
                     <div class="knob-row">
-                        <span class="knob-label" style="width: 50px;">b.rgb</span>
+                        <span class="knob-label sub">b.red</span>
                         <div class="knob-control">
                             <input type="range" class="knob-slider red" id="lab-slider-b_r" min="0" max="1" step="0.01" value="0.05" oninput="onLabKnobChange('b_r', this.value)">
                             <input type="number" class="knob-num" id="lab-num-b_r" step="0.01" value="0.05" onchange="onLabNumChange('b_r', this.value)">
+                        </div>
+                    </div>
+                    <div class="knob-row">
+                        <span class="knob-label sub">b.green</span>
+                        <div class="knob-control">
                             <input type="range" class="knob-slider green" id="lab-slider-b_g" min="0" max="1" step="0.01" value="0.02" oninput="onLabKnobChange('b_g', this.value)">
                             <input type="number" class="knob-num" id="lab-num-b_g" step="0.01" value="0.02" onchange="onLabNumChange('b_g', this.value)">
+                        </div>
+                    </div>
+                    <div class="knob-row">
+                        <span class="knob-label sub">b.blue</span>
+                        <div class="knob-control">
                             <input type="range" class="knob-slider blue" id="lab-slider-b_b" min="0" max="1" step="0.01" value="0.80" oninput="onLabKnobChange('b_b', this.value)">
                             <input type="number" class="knob-num" id="lab-num-b_b" step="0.01" value="0.80" onchange="onLabNumChange('b_b', this.value)">
                         </div>
                     </div>
 
-                    <div style="font-size: 0.7rem; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 0.1rem; margin-top: 4px;">Vector c (Frequency RGB)</div>
+                    <div class="vector-group-title">Vector c (Frequency RGB)</div>
                     <div class="knob-row">
-                        <span class="knob-label" style="width: 50px;">c.rgb</span>
+                        <span class="knob-label sub">c.red</span>
                         <div class="knob-control">
                             <input type="range" class="knob-slider red" id="lab-slider-c_r" min="0" max="5" step="0.02" value="2.88" oninput="onLabKnobChange('c_r', this.value)">
                             <input type="number" class="knob-num" id="lab-num-c_r" step="0.01" value="2.88" onchange="onLabNumChange('c_r', this.value)">
+                        </div>
+                    </div>
+                    <div class="knob-row">
+                        <span class="knob-label sub">c.green</span>
+                        <div class="knob-control">
                             <input type="range" class="knob-slider green" id="lab-slider-c_g" min="0" max="5" step="0.02" value="1.60" oninput="onLabKnobChange('c_g', this.value)">
                             <input type="number" class="knob-num" id="lab-num-c_g" step="0.01" value="1.60" onchange="onLabNumChange('c_g', this.value)">
+                        </div>
+                    </div>
+                    <div class="knob-row">
+                        <span class="knob-label sub">c.blue</span>
+                        <div class="knob-control">
                             <input type="range" class="knob-slider blue" id="lab-slider-c_b" min="0" max="5" step="0.02" value="1.99" oninput="onLabKnobChange('c_b', this.value)">
                             <input type="number" class="knob-num" id="lab-num-c_b" step="0.01" value="1.99" onchange="onLabNumChange('c_b', this.value)">
                         </div>
                     </div>
 
-                    <div style="font-size: 0.7rem; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 0.1rem; margin-top: 4px;">Vector d (Phase RGB)</div>
+                    <div class="vector-group-title">Vector d (Phase RGB)</div>
                     <div class="knob-row">
-                        <span class="knob-label" style="width: 50px;">d.rgb</span>
+                        <span class="knob-label sub">d.red</span>
                         <div class="knob-control">
                             <input type="range" class="knob-slider red" id="lab-slider-d_r" min="0" max="1" step="0.01" value="0.69" oninput="onLabKnobChange('d_r', this.value)">
                             <input type="number" class="knob-num" id="lab-num-d_r" step="0.01" value="0.69" onchange="onLabNumChange('d_r', this.value)">
+                        </div>
+                    </div>
+                    <div class="knob-row">
+                        <span class="knob-label sub">d.green</span>
+                        <div class="knob-control">
                             <input type="range" class="knob-slider green" id="lab-slider-d_g" min="0" max="1" step="0.01" value="0.49" oninput="onLabKnobChange('d_g', this.value)">
                             <input type="number" class="knob-num" id="lab-num-d_g" step="0.01" value="0.49" onchange="onLabNumChange('d_g', this.value)">
+                        </div>
+                    </div>
+                    <div class="knob-row">
+                        <span class="knob-label sub">d.blue</span>
+                        <div class="knob-control">
                             <input type="range" class="knob-slider blue" id="lab-slider-d_b" min="0" max="1" step="0.01" value="0.15" oninput="onLabKnobChange('d_b', this.value)">
                             <input type="number" class="knob-num" id="lab-num-d_b" step="0.01" value="0.15" onchange="onLabNumChange('d_b', this.value)">
                         </div>
@@ -1616,6 +1756,7 @@
 
         let labState = {
             name: "SYNTH-01",
+            render_mode: "standard",
             fold_type: "inversion",
             fold_offset_x: 0.724,
             fold_offset_y: 0.724,
@@ -1625,8 +1766,13 @@
             time_speed: 0.89,
             global_rot_speed: 0.00,
             zoom: 1.00,
+            pulse_amp: 0.00,
+            pulse_time_freq: 1.00,
+            pulse_space_freq: 1.00,
             rot_base: 1.02,
             rot_time: 0.67,
+            rot_dist: 0.00,
+            noise_amp: 0.00,
             warp_x_amp: 0.00,
             warp_x_freq: 4.50,
             warp_y_amp: 0.025,
@@ -1634,6 +1780,7 @@
             dist_decay: 1.22,
             sin_freq: 7.64,
             sin_time: 0.98,
+            sin_div: 1.00,
             glow_num: 0.007,
             glow_exp: 1.31,
             pal_speed: 1.00,
@@ -1686,7 +1833,9 @@
             const oy = Number(state.fold_offset_y).toFixed(5);
             const scale = Number(state.fold_scale).toFixed(5);
             const sectors = Math.max(3, Math.round(state.sym_sectors)).toFixed(1);
-
+            
+            const renderMode = state.render_mode || "standard";
+            
             let operatorGLSL = "";
             if (state.fold_type === 'inversion') {
                 operatorGLSL = `uv = uv / max(dot(uv, uv), 0.0001) - vec2(${ox}, ${oy});`;
@@ -1704,7 +1853,8 @@
                 operatorGLSL = `uv = (fract(uv * ${scale} + 0.5) - 0.5) - vec2(${ox}, ${oy}) * 0.2;`;
             }
 
-            return `precision highp float;
+            // --- Constructing shader components ---
+            let shaderTop = `precision highp float;
 uniform vec2 u_resolution;
 uniform float u_time;
 
@@ -1716,29 +1866,64 @@ mat2 rot(float a) {
     float s = sin(a), c = cos(a);
     return mat2(c, -s, s, c);
 }
+`;
+            
+            if (state.noise_amp > 0.001) {
+                shaderTop += `
+vec2 hash( vec2 p ) { p = vec2( dot(p,vec2(127.1,311.7)), dot(p,vec2(269.5,183.3)) ); return -1.0 + 2.0*fract(sin(p)*43758.5453123); }
+float noise( in vec2 p ) {
+    const float K1 = 0.366025404; const float K2 = 0.211324865; vec2 i = floor( p + (p.x+p.y)*K1 ); vec2 a = p - i + (i.x+i.y)*K2;
+    vec2 o = (a.x>a.y) ? vec2(1.0,0.0) : vec2(0.0,1.0); vec2 b = a - o + K2; vec2 c = a - 1.0 + 2.0*K2;
+    vec3 h = max( 0.5-vec3(dot(a,a), dot(b,b), dot(c,c) ), 0.0 );
+    vec3 n = h*h*h*h*vec3( dot(a,hash(i+0.0)), dot(b,hash(i+o)), dot(c,hash(i+1.0))); return dot( n, vec3(70.0) );
+}\n`;
+            }
 
-void main() {
+            shaderTop += `void main() {
     vec2 uv = (gl_FragCoord.xy * 2.0 - u_resolution.xy) / min(u_resolution.x, u_resolution.y);
     uv *= ${Number(state.zoom).toFixed(4)};
     vec2 uv0 = uv;
     float t = u_time * ${Number(state.time_speed).toFixed(5)};
     ${state.global_rot_speed !== 0 ? `uv *= rot(t * ${Number(state.global_rot_speed).toFixed(5)});` : ''}
-
+    ${state.noise_amp > 0.001 ? `uv *= rot(noise(uv * 2.0 + t) * ${Number(state.noise_amp).toFixed(5)});` : ''}
+    
     vec3 finalColor = vec3(0.0);
     const int ITERS = ${iters};
-
+    
+    // special variables for modes
+    float trapCross = 1e9; float trapRing = 1e9; float trapPoint = 1e9;
+    vec2 tp = vec2(${ox} * sin(t * 0.7), ${oy} * cos(t * 0.9));
+    float px = min(2.0 / u_resolution.y, 0.006);
+    float scaleAcc = 1.0;
+    float s_ink = 0.0; float s_tint = 0.0;
+    float dens_hits = 0.0; float dens_esc = float(${iters});
+    
     for(int i = 0; i < 24; i++) {
         if(i >= ITERS) break;
         float fi = float(i);
 
+        // Radial Pulse
+        ${state.pulse_amp > 0.001 ? `uv *= 1.0 + ${Number(state.pulse_amp).toFixed(5)} * sin(t * ${Number(state.pulse_time_freq).toFixed(5)} + length(uv) * ${Number(state.pulse_space_freq).toFixed(5)});` : ''}
+
         // 1. Space Folding Operator
         ${operatorGLSL}
+        
+        // Simplex Noise (Orbit Perturbation)
+        ${state.noise_amp > 0.001 ? `uv += ${Number(state.noise_amp).toFixed(5)} * vec2(noise(uv*2.0 + t), noise(uv*2.0 - t));` : ''}
 
         // 2. Transforms & Wave Warping
-        uv *= rot(fi * ${Number(state.rot_base).toFixed(5)} + t * ${Number(state.rot_time).toFixed(5)});
+        uv *= rot(fi * ${Number(state.rot_base).toFixed(5)} + t * ${Number(state.rot_time).toFixed(5)} + length(uv0) * ${Number(state.rot_dist).toFixed(5)});
         ${state.warp_x_amp > 0.0005 ? `uv.x += ${Number(state.warp_x_amp).toFixed(5)} * sin(uv.y * ${Number(state.warp_x_freq).toFixed(5)} + t);` : ''}
         ${state.warp_y_amp > 0.0005 ? `uv.y += ${Number(state.warp_y_amp).toFixed(5)} * cos(uv.x * ${Number(state.warp_y_freq).toFixed(5)} - t);` : ''}
+`;
 
+            let shaderBody = "";
+            let shaderEnd = `    gl_FragColor = vec4(clamp(finalColor, 0.0, 1.0), 1.0);
+}`;
+            
+            // Generate mode-specific logic
+            if (renderMode === "standard") {
+                shaderBody = `
         // 3. Distance & Scale Falloff
         float d = length(uv) * exp(-length(uv0) * ${Number(state.dist_decay).toFixed(5)});
 
@@ -1752,14 +1937,94 @@ void main() {
         );
 
         // 5. Distance Glow & Intensity
-        ${state.sin_freq > 0.01 ? `d = sin(d * ${Number(state.sin_freq).toFixed(5)} + t * ${Number(state.sin_time).toFixed(5)});` : ''}
+        ${state.sin_freq > 0.01 ? `d = sin(d * ${Number(state.sin_freq).toFixed(5)} + t * ${Number(state.sin_time).toFixed(5)}) / max(0.0001, ${Number(state.sin_div).toFixed(5)});` : ''}
         d = abs(d);
         d = pow(${Number(state.glow_num).toFixed(5)} / max(d, 0.0001), ${Number(state.glow_exp).toFixed(5)});
         finalColor += col * d;
     }
-
-    gl_FragColor = vec4(clamp(finalColor, 0.0, 1.0), 1.0);
-}`;
+`;
+            } else if (renderMode === "orbit_trap") {
+                shaderBody = `
+        trapCross = min(trapCross, min(abs(uv.x), abs(uv.y)));
+        trapRing  = min(trapRing, abs(length(uv) - 0.9));
+        trapPoint = min(trapPoint, length(uv - tp));
+    }
+    
+    vec3 col = palette(trapCross * 5.0 + t * ${Number(state.pal_speed).toFixed(5)},
+            vec3(${Number(state.a_r).toFixed(5)}, ${Number(state.a_g).toFixed(5)}, ${Number(state.a_b).toFixed(5)}),
+            vec3(${Number(state.b_r).toFixed(5)}, ${Number(state.b_g).toFixed(5)}, ${Number(state.b_b).toFixed(5)}),
+            vec3(${Number(state.c_r).toFixed(5)}, ${Number(state.c_g).toFixed(5)}, ${Number(state.c_b).toFixed(5)}),
+            vec3(${Number(state.d_r).toFixed(5)}, ${Number(state.d_g).toFixed(5)}, ${Number(state.d_b).toFixed(5)})
+    ) * exp(-trapCross * 30.0);
+    col += vec3(0.95, 0.32, 0.14) * exp(-trapRing * 34.0) * 0.70;
+    col += vec3(0.18, 0.72, 0.95) * exp(-trapPoint * 24.0) * 0.80;
+    col *= 1.0 - 0.42 * smoothstep(0.3, 1.5, length(uv0));
+    finalColor = col;
+`;
+            } else if (renderMode === "sdf_edge") {
+                shaderBody = `
+        scaleAcc *= ${scale};
+    }
+    
+    float d = (length(uv) - 0.62) / max(scaleAcc, 0.0001);
+    float fill = smoothstep(px, -px, d);
+    float edge = smoothstep(px * 2.2, 0.0, abs(d) - px * 0.7);
+    vec3 ground = vec3(0.055, 0.06, 0.085);
+    vec3 body = vec3(0.86, 0.90, 0.97) * (0.55 + 0.45 * smoothstep(1.2, 0.0, length(uv0)));
+    vec3 col = mix(ground, body, fill);
+    vec3 edgeColor = palette(length(uv0) + t * ${Number(state.pal_speed).toFixed(5)},
+            vec3(${Number(state.a_r).toFixed(5)}, ${Number(state.a_g).toFixed(5)}, ${Number(state.a_b).toFixed(5)}),
+            vec3(${Number(state.b_r).toFixed(5)}, ${Number(state.b_g).toFixed(5)}, ${Number(state.b_b).toFixed(5)}),
+            vec3(${Number(state.c_r).toFixed(5)}, ${Number(state.c_g).toFixed(5)}, ${Number(state.c_b).toFixed(5)}),
+            vec3(${Number(state.d_r).toFixed(5)}, ${Number(state.d_g).toFixed(5)}, ${Number(state.d_b).toFixed(5)})
+    );
+    col = mix(col, edgeColor, edge * 0.9);
+    finalColor = col;
+`;
+            } else if (renderMode === "invert") {
+                shaderBody = `
+        scaleAcc *= ${scale};
+        float w = px * scaleAcc;
+        float lod = 1.0 - smoothstep(0.030, 0.070, w);
+        float ring = abs(length(uv) - 0.30);
+        float cross_ = min(abs(uv.x), abs(uv.y));
+        float line = min(ring, cross_ * 1.4);
+        float cov = smoothstep(w * 1.8, w * 0.5, line) * lod;
+        s_ink = max(s_ink, cov * (1.0 - fi * 0.10));
+        s_tint = max(s_tint, cov * step(3.0, fi));
+    }
+    vec3 paper = vec3(0.925, 0.912, 0.878) - 0.06 * smoothstep(0.2, 1.6, length(uv0));
+    vec3 col = mix(paper, vec3(0.075, 0.085, 0.105), s_ink);
+    vec3 tintColor = palette(t * ${Number(state.pal_speed).toFixed(5)},
+            vec3(${Number(state.a_r).toFixed(5)}, ${Number(state.a_g).toFixed(5)}, ${Number(state.a_b).toFixed(5)}),
+            vec3(${Number(state.b_r).toFixed(5)}, ${Number(state.b_g).toFixed(5)}, ${Number(state.b_b).toFixed(5)}),
+            vec3(${Number(state.c_r).toFixed(5)}, ${Number(state.c_g).toFixed(5)}, ${Number(state.c_b).toFixed(5)}),
+            vec3(${Number(state.d_r).toFixed(5)}, ${Number(state.d_g).toFixed(5)}, ${Number(state.d_b).toFixed(5)})
+    );
+    col = mix(col, tintColor, s_tint * 0.55);
+    finalColor = col;
+`;
+            } else if (renderMode === "density") {
+                shaderBody = `
+        vec2 g = mod(uv + 0.5, 1.0) - 0.5;
+        dens_hits += step(length(g), 0.24);
+        if (dot(uv, uv) > 20.0) { dens_esc = float(i); break; }
+    }
+    float dens = dens_hits / 12.0;
+    float band = dens_esc / 24.0;
+    vec3 col = palette(dens * 0.55 + band * 0.35 + t * ${Number(state.pal_speed).toFixed(5)},
+            vec3(${Number(state.a_r).toFixed(5)}, ${Number(state.a_g).toFixed(5)}, ${Number(state.a_b).toFixed(5)}),
+            vec3(${Number(state.b_r).toFixed(5)}, ${Number(state.b_g).toFixed(5)}, ${Number(state.b_b).toFixed(5)}),
+            vec3(${Number(state.c_r).toFixed(5)}, ${Number(state.c_g).toFixed(5)}, ${Number(state.c_b).toFixed(5)}),
+            vec3(${Number(state.d_r).toFixed(5)}, ${Number(state.d_g).toFixed(5)}, ${Number(state.d_b).toFixed(5)})
+    );
+    col = floor(col * 6.0) / 6.0;
+    col += 0.10 * step(0.5, fract(dens * 6.0));
+    finalColor = col;
+`;
+            }
+            
+            return shaderTop + shaderBody + shaderEnd;
         }
 
         function applyLabShader() {
@@ -2099,6 +2364,13 @@ void main() {
             drawFrame();
             requestAnimationFrame(render);
         }
+
+        // --- Card Header Accordion Toggle ---
+        document.querySelectorAll('.config-card-header').forEach(header => {
+            header.addEventListener('click', () => {
+                header.parentElement.classList.toggle('collapsed');
+            });
+        });
 
         // Start: render one frame if frozen, or begin animation loop
         if (isPaused) {

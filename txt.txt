@@ -1,2 +1,9 @@
 3d renderer
 name-to-fractal-configuration pipeline
+
+site ideas
+choose a theme -> enter a name -> see your output
+
+aug 31 9:48pm
+Some configurations are not being randomized.
+Some configurations are being randomized but only a little bit. I've seen some that barely leave a small range of values
