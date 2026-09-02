@@ -23,22 +23,29 @@
             height: 100vh;
         }
 
-        #overlay {
+        #top-right-bar {
             position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
+            top: 20px;
+            right: 30px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            z-index: 30;
+            pointer-events: auto;
+        }
+
+        #overlay {
             color: #fff;
-            font-size: 4rem;
+            font-size: 1.4rem;
             font-weight: bold;
             mix-blend-mode: exclusion;
             pointer-events: none;
-            text-align: center;
+            text-align: right;
             text-transform: uppercase;
-            letter-spacing: 1rem;
-            z-index: 10;
+            letter-spacing: 0.25rem;
             animation: glitch 2s infinite linear alternate-reverse;
             white-space: nowrap;
+            user-select: none;
         }
 
         #instructions {
@@ -120,15 +127,15 @@
         }
 
         #fav-btn {
-            position: absolute;
-            top: 20px;
-            right: 30px;
-            font-size: 2.5rem;
+            font-size: 2.2rem;
             color: rgba(255, 255, 255, 0.3);
             cursor: pointer;
-            z-index: 30;
             transition: all 0.3s;
             user-select: none;
+            line-height: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         #fav-btn:hover {
@@ -685,40 +692,44 @@
 
         @keyframes glitch {
             0% {
-                text-shadow: 5px 0 0 red, -5px 0 0 cyan;
-                transform: translate(-50%, -50%) skewX(0deg);
+                text-shadow: 3px 0 0 red, -3px 0 0 cyan;
+                transform: skewX(0deg);
             }
 
             5% {
-                text-shadow: -5px 0 0 red, 5px 0 0 cyan;
-                transform: translate(-50%, -50%) skewX(15deg);
+                text-shadow: -3px 0 0 red, 3px 0 0 cyan;
+                transform: skewX(8deg);
             }
 
             10% {
-                text-shadow: 5px 0 0 red, -5px 0 0 cyan;
-                transform: translate(-50%, -50%) skewX(-15deg);
+                text-shadow: 3px 0 0 red, -3px 0 0 cyan;
+                transform: skewX(-8deg);
             }
 
             15% {
-                text-shadow: -5px 0 0 red, 5px 0 0 cyan;
-                transform: translate(-50%, -50%) skewX(0deg);
+                text-shadow: -3px 0 0 red, 3px 0 0 cyan;
+                transform: skewX(0deg);
             }
 
             95% {
-                text-shadow: 5px 0 0 red, -5px 0 0 cyan;
-                transform: translate(-50%, -50%) skewX(0deg);
+                text-shadow: 3px 0 0 red, -3px 0 0 cyan;
+                transform: skewX(0deg);
             }
 
             100% {
-                text-shadow: -8px 5px 0 red, 8px -5px 0 cyan;
-                transform: translate(-50%, -50%) skewX(5deg);
+                text-shadow: -4px 3px 0 red, 4px -3px 0 cyan;
+                transform: skewX(3deg);
             }
         }
     </style>
 </head>
 
 <body>
-    <div id="overlay">V O I D</div>
+    <!-- Top-Right Header (Fractal Name & Favorite Star) -->
+    <div id="top-right-bar">
+        <div id="overlay">V O I D</div>
+        <div id="fav-btn" title="Toggle Favorite (F)">★</div>
+    </div>
     <div id="instructions" class="gallery-only">◄ Left / Right Arrows to Traverse ►</div>
     <div id="carousel" class="gallery-only"></div>
 
@@ -1121,8 +1132,6 @@
             </div>
         </div>
     </div>
-
-    <div id="fav-btn">★</div>
 
     <div id="fav-panel" class="">
         <div id="fav-panel-content">
@@ -1608,7 +1617,7 @@
         });
 
         document.addEventListener('click', (e) => {
-            if (e.target.closest('#nav-tabs') || e.target.closest('#lab-panel') || e.target.closest('#carousel') || e.target.closest('#fav-panel') || e.target.closest('#fav-tab-btn') || e.target.closest('#fav-btn') || e.target.closest('#speed-control') || e.target.closest('input') || e.target.closest('select') || e.target.closest('button')) return;
+            if (e.target.closest('#nav-tabs') || e.target.closest('#lab-panel') || e.target.closest('#carousel') || e.target.closest('#fav-panel') || e.target.closest('#fav-tab-btn') || e.target.closest('#fav-btn') || e.target.closest('#top-right-bar') || e.target.closest('#speed-control') || e.target.closest('input') || e.target.closest('select') || e.target.closest('button')) return;
             const pInfo = temporaryFavoriteOverride || getProgram(gl, mainCache, currentSlide);
             if (pInfo && pInfo.fsSource) {
                 navigator.clipboard.writeText(pInfo.fsSource).then(() => {

@@ -6,7 +6,7 @@
     <title>Generative Shader Apparel — Brainstorming & Brand Blueprint</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&family=JetBrains+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Cinzel+Decorative:wght@700&family=Inter:wght@300;400;600;700;900&family=JetBrains+Mono:ital,wght@0,400;0,700;1,400&family=Syne:wght@700;800;900&family=UnifrakturCook:wght@700&display=swap" rel="stylesheet">
     <style>
         :root {
             --bg-color: #0b0b0e;
@@ -257,6 +257,88 @@
             font-family: 'JetBrains Mono', monospace;
         }
 
+        /* Table Styles */
+        .styled-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            font-size: 0.95rem;
+        }
+
+        .styled-table th, .styled-table td {
+            padding: 12px 16px;
+            text-align: left;
+            border-bottom: 1px solid var(--card-border);
+        }
+
+        .styled-table th {
+            background: rgba(255, 255, 255, 0.03);
+            color: #fff;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .styled-table tr:hover td {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        /* Type Mask Demo Container */
+        .type-preview-container {
+            position: relative;
+            width: 100%;
+            height: 240px;
+            background: #000;
+            border-radius: 12px;
+            border: 1px solid var(--card-border);
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 15px;
+            box-shadow: inset 0 0 50px rgba(0,0,0,0.8);
+        }
+
+        #typeGlCanvas {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            clip-path: url(#font-clip);
+            -webkit-clip-path: url(#font-clip);
+        }
+
+        .type-controls-row {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 15px;
+        }
+
+        .font-chip {
+            background: #181820;
+            border: 1px solid var(--card-border);
+            color: var(--text-muted);
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+            user-select: none;
+        }
+
+        .font-chip:hover {
+            border-color: rgba(255,255,255,0.3);
+            color: #fff;
+        }
+
+        .font-chip.active {
+            background: rgba(229, 57, 53, 0.15);
+            border-color: var(--accent-red);
+            color: #fff;
+            box-shadow: 0 0 10px var(--accent-glow);
+        }
+
         footer {
             text-align: center;
             color: var(--text-muted);
@@ -341,9 +423,92 @@
         </div>
     </section>
 
-    <!-- SECTION 5: CAMPUS LAUNCH PLAYBOOK -->
+    <!-- SECTION 5: TYPOGRAPHIC DARKWEAR & FONT-MASKED FRACTALS -->
     <section>
-        <h2><span class="num">05</span> University & Guerrilla Launch Playbook</h2>
+        <h2><span class="num">05</span> Typographic Darkwear & Font-Masked Patterns</h2>
+        <p>By masking generative fractal algorithms directly into <strong>bold, structural typography</strong>, we bridge mathematical chaos with high-end streetwear. The contrast between rigid typography and liquid organic shader motion creates an immediate, designer-grade statement piece.</p>
+
+        <div class="highlight-box">
+            <strong>The Typographic Breakthrough:</strong> Eliminates the traditional "flat rectangle box" print limitation. The letterforms themselves become the canvas for the algorithm, creating striking silhouettes for chest wordmarks, spine prints, and sleeves.
+        </div>
+
+        <h3 style="margin-top: 25px; color: #fff; font-size: 1.15rem;">Interactive Font-Mask Playground (Live WebGL)</h3>
+        <p style="font-size: 0.9rem; color: #aaa;">Type a word or brand name and switch font styles to see the real-time fractal shader flowing through the letterforms:</p>
+
+        <div class="demo-widget">
+            <div class="input-group">
+                <input type="text" id="typeTextInput" value="FLESH" placeholder="Enter wordmark (e.g. FLESH, CHAOS, VOID)..." oninput="updateMaskText()">
+            </div>
+
+            <div class="type-controls-row">
+                <div class="font-chip active" onclick="setFontStyle('syne', this)">Brutalist Heavy ('Syne 900')</div>
+                <div class="font-chip" onclick="setFontStyle('bebas', this)">Extended Bold ('Bebas Neue')</div>
+                <div class="font-chip" onclick="setFontStyle('gothic', this)">Neo-Gothic ('Unifraktur')</div>
+                <div class="font-chip" onclick="setFontStyle('cinzel', this)">Cyber Antique ('Cinzel')</div>
+                <div class="font-chip" onclick="setFontStyle('mono', this)">Terminal Mono ('JetBrains')</div>
+            </div>
+
+            <div class="type-preview-container">
+                <canvas id="typeGlCanvas" width="900" height="240"></canvas>
+                <svg viewBox="0 0 900 240" style="position: absolute; width: 0; height: 0; pointer-events: none;">
+                    <defs>
+                        <clipPath id="font-clip" clipPathUnits="userSpaceOnUse">
+                            <text id="svgMaskText" x="450" y="155" text-anchor="middle" font-family="'Syne', sans-serif" font-weight="900" font-size="120" letter-spacing="10">FLESH</text>
+                        </clipPath>
+                    </defs>
+                </svg>
+            </div>
+            <div class="img-caption" style="text-align: center; margin-top: 10px;">Live WebGL Shader Masked via SVG Geometry</div>
+        </div>
+
+        <h3 style="margin-top: 30px; color: #fff; font-size: 1.15rem;">Styling Archetypes & Apparel Placement</h3>
+        <table class="styled-table">
+            <thead>
+                <tr>
+                    <th>Typography Archetype</th>
+                    <th>Visual Character</th>
+                    <th>Recommended Garment Placement</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>Brutalist Extended Sans</strong></td>
+                    <td>Massive solid letterforms providing maximum fractal surface area.</td>
+                    <td>Upper-Chest Arch or Oversized Back Wordmark.</td>
+                </tr>
+                <tr>
+                    <td><strong>Neo-Gothic / Blackletter</strong></td>
+                    <td>Spiked, high-contrast aggressive silhouettes with organic marbling.</td>
+                    <td>Down both sleeves or centered chest crest.</td>
+                </tr>
+                <tr>
+                    <td><strong>Negative Space Invert</strong></td>
+                    <td>Solid black rectangular patch with the text hollowed out to reveal the fractal.</td>
+                    <td>Left chest pocket badge or lower hem tag.</td>
+                </tr>
+                <tr>
+                    <td><strong>Spine Vertebrae Vertical</strong></td>
+                    <td>Tall, single-column letter stack following the spine contour.</td>
+                    <td>Center back down the full spine length.</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="grid-2" style="margin-top: 20px;">
+            <div class="feature-card">
+                <h3>🖨️ Production Technique</h3>
+                <p style="font-size: 0.9rem; color: #bbb;">High-definition <strong>Direct-to-Film (DTF)</strong> or <strong>High-Density 3D Puff Ink</strong> to give the typographic borders tactile, raised depth over 260+ GSM heavyweight cotton.</p>
+            </div>
+            <div class="feature-card">
+                <h3>🧬 Algorithmic Cohesion</h3>
+                <p style="font-size: 0.9rem; color: #bbb;">Customers can lock their personalized mathematical seed and choose between a <strong>Pure Geometric Box Print</strong> or a <strong>Custom Typographic Mask</strong> at checkout.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- SECTION 6: CAMPUS LAUNCH PLAYBOOK -->
+    <section>
+        <h2><span class="num">06</span> University & Guerrilla Launch Playbook</h2>
         <p>A 4-phase rollout strategy to build organic campus hype and word-of-mouth validation:</p>
 
         <ul>
@@ -354,9 +519,9 @@
         </ul>
     </section>
 
-    <!-- SECTION 6: TECHNICAL ROADMAP -->
+    <!-- SECTION 7: TECHNICAL ROADMAP -->
     <section>
-        <h2><span class="num">06</span> Technical Implementation Roadmap</h2>
+        <h2><span class="num">07</span> Technical Implementation Roadmap</h2>
         <ul>
             <li><strong>Step 1:</strong> Integrate Name-to-Seed converter into <code>index.html</code> WebGL controls.</li>
             <li><strong>Step 2:</strong> Implement 4K offscreen canvas rendering (`3000x3000px`) for high-resolution print exports.</li>
@@ -408,8 +573,118 @@ STATUS: 1-of-1 Unique Mathematical Signature Verified.`;
         document.getElementById('seedResult').innerText = output;
     }
 
-    // Run on initial load
+    // --- Interactive Type Mask Controls ---
+    const fontFamilies = {
+        syne: "'Syne', sans-serif",
+        bebas: "'Bebas Neue', sans-serif",
+        gothic: "'UnifrakturCook', cursive",
+        cinzel: "'Cinzel Decorative', serif",
+        mono: "'JetBrains Mono', monospace"
+    };
+    let currentFontKey = 'syne';
+
+    function setFontStyle(key, el) {
+        currentFontKey = key;
+        document.querySelectorAll('.font-chip').forEach(c => c.classList.remove('active'));
+        if (el) el.classList.add('active');
+        const maskText = document.getElementById('svgMaskText');
+        maskText.setAttribute('font-family', fontFamilies[key] || fontFamilies.syne);
+        updateMaskText();
+    }
+
+    function updateMaskText() {
+        const txt = (document.getElementById('typeTextInput').value || "FLESH").trim().toUpperCase();
+        const maskText = document.getElementById('svgMaskText');
+        maskText.textContent = txt;
+
+        let fontSize = 120;
+        let letterSpacing = 10;
+
+        if (currentFontKey === 'bebas') {
+            fontSize = 145;
+            letterSpacing = 14;
+        } else if (currentFontKey === 'gothic') {
+            fontSize = 110;
+            letterSpacing = 4;
+        } else if (currentFontKey === 'cinzel') {
+            fontSize = 100;
+            letterSpacing = 6;
+        } else if (currentFontKey === 'mono') {
+            fontSize = 90;
+            letterSpacing = 6;
+        }
+
+        if (txt.length > 8) {
+            fontSize = Math.round(fontSize * (8 / txt.length));
+        }
+
+        maskText.setAttribute('font-size', fontSize.toString());
+        maskText.setAttribute('letter-spacing', letterSpacing.toString());
+    }
+
+    // --- Live WebGL Shader for Typography Canvas ---
+    const typeCanvas = document.getElementById('typeGlCanvas');
+    const gl = typeCanvas.getContext('webgl') || typeCanvas.getContext('experimental-webgl');
+
+    if (gl) {
+        const vsSource = `attribute vec4 aVertexPosition; void main() { gl_Position = aVertexPosition; }`;
+        const fsSource = `precision highp float; uniform vec2 u_resolution; uniform float u_time;
+        mat2 rot(float a) { float s = sin(a), c = cos(a); return mat2(c, -s, s, c); }
+        vec2 hash( vec2 p ) { p = vec2( dot(p,vec2(127.1,311.7)), dot(p,vec2(269.5,183.3)) ); return -1.0 + 2.0*fract(sin(p)*43758.5453123); }
+        float noise( in vec2 p ) {
+            const float K1 = 0.366025404; const float K2 = 0.211324865; vec2 i = floor( p + (p.x+p.y)*K1 ); vec2 a = p - i + (i.x+i.y)*K2;
+            vec2 o = (a.x>a.y) ? vec2(1.0,0.0) : vec2(0.0,1.0); vec2 b = a - o + K2; vec2 c = a - 1.0 + 2.0*K2;
+            vec3 h = max( 0.5-vec3(dot(a,a), dot(b,b), dot(c,c) ), 0.0 );
+            vec3 n = h*h*h*h*vec3( dot(a,hash(i+0.0)), dot(b,hash(i+o)), dot(c,hash(i+1.0))); return dot( n, vec3(70.0) );
+        }
+        void main() {
+            vec2 uv = (gl_FragCoord.xy * 2.0 - u_resolution.xy) / min(u_resolution.x, u_resolution.y); float t = u_time * 0.45;
+            uv *= 0.9 + 0.1 * sin(t * 2.0 + length(uv) * 3.0); uv *= rot(noise(uv * 1.5 + t) * 0.35);
+            vec2 z = uv; float iter = 0.0;
+            for(int i = 0; i < 35; i++) {
+                z = vec2(z.x*z.x - z.y*z.y, 2.0*z.x*z.y) + vec2(0.35 + 0.1*sin(t*0.8), 0.35 + 0.1*cos(t*1.1));
+                z += 0.12 * vec2(noise(z*2.0 + t), noise(z*2.0 - t)); if(length(z) > 4.0) break; iter++;
+            }
+            float smooth_iter = iter - log2(max(1.0, log2(dot(z,z)))) + 4.0; float flesh = sin(smooth_iter * 0.3 + t * 2.0) * 0.5 + 0.5;
+            float vein = sin(smooth_iter * 0.8 - t * 3.0) * 0.5 + 0.5; vec3 col = mix(vec3(0.18, 0.02, 0.05), vec3(0.85, 0.2, 0.15), flesh); 
+            col = mix(col, vec3(0.2, 0.55, 0.15), vein * 0.35); col *= smoothstep(0.02, 0.25, length(uv) + 0.1*noise(uv*8.0+t*4.0));
+            gl_FragColor = vec4(col, 1.0);
+        }`;
+
+        function createShader(gl, type, source) {
+            const shader = gl.createShader(type); gl.shaderSource(shader, source); gl.compileShader(shader); return shader;
+        }
+        const vs = createShader(gl, gl.VERTEX_SHADER, vsSource);
+        const fs = createShader(gl, gl.FRAGMENT_SHADER, fsSource);
+        const prog = gl.createProgram();
+        gl.attachShader(prog, vs); gl.attachShader(prog, fs); gl.linkProgram(prog);
+
+        const posBuf = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, posBuf);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, -1,1, 1,-1, 1,1]), gl.STATIC_DRAW);
+
+        const posAttr = gl.getAttribLocation(prog, 'aVertexPosition');
+        const timeLoc = gl.getUniformLocation(prog, 'u_time');
+        const resLoc = gl.getUniformLocation(prog, 'u_resolution');
+
+        let startT = performance.now();
+        function renderTypeShader() {
+            const t = (performance.now() - startT) * 0.001;
+            gl.useProgram(prog);
+            gl.bindBuffer(gl.ARRAY_BUFFER, posBuf);
+            gl.enableVertexAttribArray(posAttr);
+            gl.vertexAttribPointer(posAttr, 2, gl.FLOAT, false, 0, 0);
+            gl.uniform1f(timeLoc, t);
+            gl.uniform2f(resLoc, typeCanvas.width, typeCanvas.height);
+            gl.drawArrays(gl.TRIANGLES, 0, 6);
+            requestAnimationFrame(renderTypeShader);
+        }
+        renderTypeShader();
+    }
+
+    // Run initializations
     computeSeed();
+    updateMaskText();
 </script>
 
 </body>
