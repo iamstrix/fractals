@@ -187,6 +187,27 @@
             font-weight: bold;
         }
 
+        #ui-toggle {
+            min-height: 44px;
+            flex-shrink: 0;
+        }
+
+        #ui-toggle:focus-visible {
+            outline: 2px solid #fff;
+            outline-offset: 4px;
+        }
+
+        body.ui-hidden #overlay,
+        body.ui-hidden #fav-btn,
+        body.ui-hidden #instructions,
+        body.ui-hidden #carousel,
+        body.ui-hidden #nav-tabs,
+        body.ui-hidden #lab-panel,
+        body.ui-hidden #fav-panel,
+        body.ui-hidden #speed-control {
+            display: none;
+        }
+
         /* --- Laboratory Synthesizer Panel --- */
         #lab-panel {
             position: absolute;
@@ -729,6 +750,9 @@
     <div id="top-right-bar">
         <div id="overlay">V O I D</div>
         <div id="fav-btn" title="Toggle Favorite (F)">★</div>
+        <button id="ui-toggle" class="nav-btn" type="button" title="Hide UI (H)"
+            aria-controls="overlay fav-btn instructions carousel nav-tabs lab-panel fav-panel speed-control"
+            aria-expanded="true" aria-keyshortcuts="H">Hide UI</button>
     </div>
     <div id="instructions" class="gallery-only">◄ Left / Right Arrows to Traverse ►</div>
     <div id="carousel" class="gallery-only"></div>
@@ -1156,6 +1180,18 @@
     <canvas id="glcanvas"></canvas>
 
     <script>
+        const uiToggle = document.getElementById('ui-toggle');
+
+        function toggleUI() {
+            const hidden = document.body.classList.toggle('ui-hidden');
+            uiToggle.textContent = hidden ? 'Show UI' : 'Hide UI';
+            uiToggle.title = hidden ? 'Show UI (H)' : 'Hide UI (H)';
+            uiToggle.setAttribute('aria-expanded', String(!hidden));
+            if (hidden) uiToggle.focus({ preventScroll: true });
+        }
+
+        uiToggle.addEventListener('click', toggleUI);
+
         const canvas = document.getElementById('glcanvas');
         const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
         if (!gl) document.body.innerHTML = '<h1 style="color:white; text-align:center; margin-top:20%">WebGL is required but not supported by your browser.</h1>';
@@ -1608,7 +1644,11 @@
 
         document.addEventListener('keydown', (e) => {
             if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.tagName === 'TEXTAREA') return;
-            if (e.key === 'ArrowRight') { currentSlide = (currentSlide + 1) % TOTAL_SLIDES; updateUI(); }
+            if (e.key.toLowerCase() === 'h' && !e.repeat && !e.ctrlKey && !e.metaKey && !e.altKey && !e.target.isContentEditable) {
+                e.preventDefault();
+                toggleUI();
+            }
+            else if (e.key === 'ArrowRight') { currentSlide = (currentSlide + 1) % TOTAL_SLIDES; updateUI(); }
             else if (e.key === 'ArrowLeft') { currentSlide = (currentSlide - 1 + TOTAL_SLIDES) % TOTAL_SLIDES; updateUI(); }
             else if (e.key === 'f' || e.key === 'F') { toggleFavorite(); }
             else if (e.key === 'Escape') {
@@ -2144,36 +2184,92 @@ float noise( in vec2 p ) {
         }
 
         function randomizeLab() {
+            // 1. Operator & Space Folding
+            const renderModes = ['standard', 'orbit_trap', 'sdf_edge', 'invert', 'density'];
+            labState.render_mode = renderModes[Math.floor(Math.random() * renderModes.length)];
+
             const types = ['inversion', 'abs_box', 'julia', 'polar_kaleido', 'droste', 'sierpinski', 'fract_grid'];
             labState.fold_type = types[Math.floor(Math.random() * types.length)];
-            labState.fold_offset_x = (Math.random() * 1.8 - 0.9);
-            labState.fold_offset_y = (Math.random() * 1.8 - 0.9);
-            labState.fold_scale = 0.8 + Math.random() * 1.2;
-            labState.sym_sectors = Math.floor(4 + Math.random() * 8);
-            labState.iterations = Math.floor(5 + Math.random() * 11);
-            labState.time_speed = 0.3 + Math.random() * 1.2;
-            labState.global_rot_speed = (Math.random() - 0.5) * 0.8;
-            labState.zoom = 0.8 + Math.random() * 0.6;
-            labState.rot_base = (Math.random() * 4.0 - 2.0);
-            labState.rot_time = (Math.random() * 2.0 - 1.0);
-            labState.warp_x_amp = Math.random() < 0.5 ? 0 : Math.random() * 0.25;
-            labState.warp_x_freq = 2.0 + Math.random() * 8.0;
-            labState.warp_y_amp = Math.random() < 0.5 ? 0 : Math.random() * 0.25;
-            labState.warp_y_freq = 2.0 + Math.random() * 8.0;
-            labState.dist_decay = 0.4 + Math.random() * 1.5;
-            labState.sin_freq = 2.0 + Math.random() * 8.0;
-            labState.sin_time = (Math.random() * 4.0 - 2.0);
-            labState.glow_num = 0.005 + Math.random() * 0.015;
-            labState.glow_exp = 1.1 + Math.random() * 0.5;
-            labState.pal_speed = 0.5 + Math.random() * 1.0;
-            labState.pal_spread = 0.4 + Math.random() * 1.2;
+            
+            // Offset X/Y: Full [-2.0, 2.0]
+            labState.fold_offset_x = Number((Math.random() * 4.0 - 2.0).toFixed(3));
+            labState.fold_offset_y = Number((Math.random() * 4.0 - 2.0).toFixed(3));
+            // Step Scale: Full [0.2, 3.0]
+            labState.fold_scale = Number((0.2 + Math.random() * 2.8).toFixed(2));
+            // Symmetry Sectors: Full [3, 16]
+            labState.sym_sectors = Math.floor(3 + Math.random() * 14);
 
-            const presetKeys = Object.keys(palettePresets);
-            const chosen = palettePresets[presetKeys[Math.floor(Math.random() * presetKeys.length)]];
-            labState.a_r = chosen.a[0]; labState.a_g = chosen.a[1]; labState.a_b = chosen.a[2];
-            labState.b_r = chosen.b[0]; labState.b_g = chosen.b[1]; labState.b_b = chosen.b[2];
-            labState.c_r = chosen.c[0]; labState.c_g = chosen.c[1]; labState.c_b = chosen.c[2];
-            labState.d_r = chosen.d[0]; labState.d_g = chosen.d[1]; labState.d_b = chosen.d[2];
+            // 2. Loop & Dynamics
+            // Iterations: Full [1, 24]
+            labState.iterations = Math.floor(1 + Math.random() * 24);
+            // Time Rate: Full [0.0, 3.0]
+            labState.time_speed = Number((Math.random() * 3.0).toFixed(2));
+            // Global Rotation: Full [-2.0, 2.0]
+            labState.global_rot_speed = Number((Math.random() * 4.0 - 2.0).toFixed(2));
+            // Zoom Scale: Full [0.2, 4.0]
+            labState.zoom = Number((0.2 + Math.random() * 3.8).toFixed(2));
+            // Radial Pulse: Full [0.0, 0.5], [0.1, 10.0], [0.1, 10.0]
+            labState.pulse_amp = Math.random() < 0.4 ? 0.0 : Number((Math.random() * 0.5).toFixed(2));
+            labState.pulse_time_freq = Number((0.1 + Math.random() * 9.9).toFixed(1));
+            labState.pulse_space_freq = Number((0.1 + Math.random() * 9.9).toFixed(1));
+
+            // 3. Transforms & Wave Warping
+            // Step Rotation: Full [-3.14, 3.14]
+            labState.rot_base = Number((Math.random() * 6.28 - 3.14).toFixed(2));
+            // Rot Time Rate: Full [-2.0, 2.0]
+            labState.rot_time = Number((Math.random() * 4.0 - 2.0).toFixed(2));
+            // Rot Dist Factor: Full [-10.0, 10.0]
+            labState.rot_dist = Math.random() < 0.4 ? 0.0 : Number((Math.random() * 20.0 - 10.0).toFixed(1));
+            // Noise Amp: Full [0.0, 1.0]
+            labState.noise_amp = Math.random() < 0.5 ? 0.0 : Number((Math.random() * 1.0).toFixed(2));
+            // Wave Warping: Full [0.0, 0.5] and [0.5, 20.0]
+            labState.warp_x_amp = Math.random() < 0.35 ? 0.0 : Number((Math.random() * 0.5).toFixed(3));
+            labState.warp_x_freq = Number((0.5 + Math.random() * 19.5).toFixed(1));
+            labState.warp_y_amp = Math.random() < 0.35 ? 0.0 : Number((Math.random() * 0.5).toFixed(3));
+            labState.warp_y_freq = Number((0.5 + Math.random() * 19.5).toFixed(1));
+
+            // 4. Distance & Glow Shaping
+            // Distance Decay: Full [0.0, 3.0]
+            labState.dist_decay = Number((Math.random() * 3.0).toFixed(2));
+            // Sine Frequency: Full [0.0, 25.0]
+            labState.sin_freq = Number((Math.random() * 25.0).toFixed(1));
+            // Sine Time Rate: Full [-5.0, 5.0]
+            labState.sin_time = Number((Math.random() * 10.0 - 5.0).toFixed(2));
+            // Sine Divisor: Full [0.1, 10.0]
+            labState.sin_div = Number((0.1 + Math.random() * 9.9).toFixed(1));
+            // Glow Numerator: Full [0.001, 0.050]
+            labState.glow_num = Number((0.001 + Math.random() * 0.049).toFixed(4));
+            // Glow Falloff Exponent: Full [0.5, 3.0]
+            labState.glow_exp = Number((0.5 + Math.random() * 2.5).toFixed(2));
+
+            // 5. IQ Cosine Color Palette Model
+            // Cycle Speed & Spread Rate: Full [0.0, 3.0]
+            labState.pal_speed = Number((Math.random() * 3.0).toFixed(2));
+            labState.pal_spread = Number((Math.random() * 3.0).toFixed(2));
+
+            // 50% Curated Presets with Variation / 50% Pure Generative Palette
+            if (Math.random() < 0.5) {
+                const presetKeys = Object.keys(palettePresets);
+                const chosenKey = presetKeys[Math.floor(Math.random() * presetKeys.length)];
+                const chosen = palettePresets[chosenKey];
+                labState.a_r = chosen.a[0]; labState.a_g = chosen.a[1]; labState.a_b = chosen.a[2];
+                labState.b_r = chosen.b[0]; labState.b_g = chosen.b[1]; labState.b_b = chosen.b[2];
+                labState.c_r = chosen.c[0]; labState.c_g = chosen.c[1]; labState.c_b = chosen.c[2];
+                labState.d_r = chosen.d[0]; labState.d_g = chosen.d[1]; labState.d_b = chosen.d[2];
+            } else {
+                labState.a_r = Number(Math.random().toFixed(2));
+                labState.a_g = Number(Math.random().toFixed(2));
+                labState.a_b = Number(Math.random().toFixed(2));
+                labState.b_r = Number((Math.random() * 0.8).toFixed(2));
+                labState.b_g = Number((Math.random() * 0.8).toFixed(2));
+                labState.b_b = Number((Math.random() * 0.8).toFixed(2));
+                labState.c_r = Number((0.2 + Math.random() * 4.8).toFixed(2));
+                labState.c_g = Number((0.2 + Math.random() * 4.8).toFixed(2));
+                labState.c_b = Number((0.2 + Math.random() * 4.8).toFixed(2));
+                labState.d_r = Number(Math.random().toFixed(2));
+                labState.d_g = Number(Math.random().toFixed(2));
+                labState.d_b = Number(Math.random().toFixed(2));
+            }
 
             labState.name = "GEN-" + Math.floor(1000 + Math.random() * 9000);
             syncLabControlsToState();
@@ -2186,17 +2282,45 @@ float noise( in vec2 p ) {
                 return Math.max(minVal, Math.min(maxVal, val + delta));
             };
 
-            labState.fold_offset_x = mutate(labState.fold_offset_x, 0.25, -2.0, 2.0);
-            labState.fold_offset_y = mutate(labState.fold_offset_y, 0.25, -2.0, 2.0);
-            labState.rot_base = mutate(labState.rot_base, 0.3, -3.14, 3.14);
-            labState.rot_time = mutate(labState.rot_time, 0.2, -2.0, 2.0);
-            labState.dist_decay = mutate(labState.dist_decay, 0.2, 0.0, 3.0);
-            labState.sin_freq = mutate(labState.sin_freq, 1.0, 0.0, 20.0);
-            labState.glow_num = mutate(labState.glow_num, 0.003, 0.001, 0.05);
-            labState.glow_exp = mutate(labState.glow_exp, 0.15, 0.5, 3.0);
-            labState.c_r = mutate(labState.c_r, 0.4, 0.0, 5.0);
-            labState.c_g = mutate(labState.c_g, 0.4, 0.0, 5.0);
-            labState.c_b = mutate(labState.c_b, 0.4, 0.0, 5.0);
+            // Mutate folding geometry
+            labState.fold_offset_x = Number(mutate(labState.fold_offset_x, 0.4, -2.0, 2.0).toFixed(3));
+            labState.fold_offset_y = Number(mutate(labState.fold_offset_y, 0.4, -2.0, 2.0).toFixed(3));
+            labState.fold_scale = Number(mutate(labState.fold_scale, 0.3, 0.2, 3.0).toFixed(2));
+            labState.sym_sectors = Math.round(mutate(labState.sym_sectors, 2, 3, 16));
+            labState.iterations = Math.round(mutate(labState.iterations, 3, 1, 24));
+            labState.time_speed = Number(mutate(labState.time_speed, 0.4, 0.0, 3.0).toFixed(2));
+            labState.global_rot_speed = Number(mutate(labState.global_rot_speed, 0.3, -2.0, 2.0).toFixed(2));
+            labState.zoom = Number(mutate(labState.zoom, 0.4, 0.2, 4.0).toFixed(2));
+
+            // Mutate transforms & harmonics
+            labState.rot_base = Number(mutate(labState.rot_base, 0.5, -3.14, 3.14).toFixed(2));
+            labState.rot_time = Number(mutate(labState.rot_time, 0.4, -2.0, 2.0).toFixed(2));
+            labState.rot_dist = Number(mutate(labState.rot_dist, 2.0, -10.0, 10.0).toFixed(1));
+            labState.noise_amp = Number(mutate(labState.noise_amp, 0.15, 0.0, 1.0).toFixed(2));
+            labState.warp_x_amp = Number(mutate(labState.warp_x_amp, 0.08, 0.0, 0.5).toFixed(3));
+            labState.warp_x_freq = Number(mutate(labState.warp_x_freq, 2.0, 0.5, 20.0).toFixed(1));
+            labState.warp_y_amp = Number(mutate(labState.warp_y_amp, 0.08, 0.0, 0.5).toFixed(3));
+            labState.warp_y_freq = Number(mutate(labState.warp_y_freq, 2.0, 0.5, 20.0).toFixed(1));
+
+            // Mutate pulse & shading
+            labState.pulse_amp = Number(mutate(labState.pulse_amp, 0.1, 0.0, 0.5).toFixed(2));
+            labState.dist_decay = Number(mutate(labState.dist_decay, 0.3, 0.0, 3.0).toFixed(2));
+            labState.sin_freq = Number(mutate(labState.sin_freq, 2.5, 0.0, 25.0).toFixed(1));
+            labState.sin_time = Number(mutate(labState.sin_time, 1.0, -5.0, 5.0).toFixed(2));
+            labState.sin_div = Number(mutate(labState.sin_div, 1.0, 0.1, 10.0).toFixed(1));
+            labState.glow_num = Number(mutate(labState.glow_num, 0.005, 0.001, 0.050).toFixed(4));
+            labState.glow_exp = Number(mutate(labState.glow_exp, 0.3, 0.5, 3.0).toFixed(2));
+
+            // Mutate chromatics
+            labState.pal_speed = Number(mutate(labState.pal_speed, 0.3, 0.0, 3.0).toFixed(2));
+            labState.pal_spread = Number(mutate(labState.pal_spread, 0.3, 0.0, 3.0).toFixed(2));
+            labState.c_r = Number(mutate(labState.c_r, 0.5, 0.0, 5.0).toFixed(2));
+            labState.c_g = Number(mutate(labState.c_g, 0.5, 0.0, 5.0).toFixed(2));
+            labState.c_b = Number(mutate(labState.c_b, 0.5, 0.0, 5.0).toFixed(2));
+            labState.d_r = Number(mutate(labState.d_r, 0.2, 0.0, 1.0).toFixed(2));
+            labState.d_g = Number(mutate(labState.d_g, 0.2, 0.0, 1.0).toFixed(2));
+            labState.d_b = Number(mutate(labState.d_b, 0.2, 0.0, 1.0).toFixed(2));
+
             labState.name = "MUT-" + Math.floor(100 + Math.random() * 900);
 
             syncLabControlsToState();
